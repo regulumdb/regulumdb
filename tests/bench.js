@@ -14,7 +14,7 @@ const globOptions = {
 const outputJsonFlag = '--json'
 
 const defaultFilePatterns = ['./bench/**/*.js']
-const defaultMinSamples = 5
+const defaultMinSamples = 1
 
 async function main () {
   // Remove `node` and `bench.js` from the arguments.
