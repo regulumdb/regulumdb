@@ -65,6 +65,11 @@ debug: $(RUST_TARGET)
 test: $(RUST_TARGET)
 	$(SWIPL) -t 'run_tests, halt.' -f src/interactive.pl
 
+# Run the unit tests in swipl.
+.PHONY: enterprise-test
+enterprise-test: enterprise-module
+	TERMINUSDB_ENTERPRISE=true $(SWIPL) -t 'run_tests, halt.' -f src/interactive.pl
+
 # Quick command for interactive
 .PHONY: i
 i: $(RUST_TARGET)
