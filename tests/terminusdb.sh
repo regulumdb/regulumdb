@@ -46,5 +46,5 @@ elif [[ $use_exec -eq 0 ]]; then
   if [ -t 1 ]; then
     set -x
   fi
-  "$TERMINUSDB_EXEC_PATH" "$@"
+  eval "$TERMINUSDB_EXEC_PATH" "$@"
 fi
