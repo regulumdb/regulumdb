@@ -47,4 +47,6 @@ elif [[ $use_exec -eq 0 ]]; then
     set -x
   fi
   export TERMINUSDB_SERVER_DB_PATH="$TERMINUSDB_SERVER_DB_PATH"
+  eval "$TERMINUSDB_EXEC_PATH" $@
+
 fi
