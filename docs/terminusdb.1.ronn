@@ -314,6 +314,15 @@ Get the log for a branch given by DB_SPEC.
   * `-j`, `--json`=[value]:
   return log as JSON
 
+### reset
+
+`terminusdb reset BRANCH_SPEC COMMIT_OR_COMMIT_SPEC`
+
+Reset the branch at BRANCH_SPEC to the COMMIT_OR_COMMIT_SPEC
+
+  * `-h`, `--help`=[value]:
+  print help for the `reset` command
+
 ### branch create
 
 `terminusdb branch create BRANCH_SPEC OPTIONS`
@@ -409,9 +418,6 @@ Update a database setting the OPTIONS in an existing database.
 
   * `-h`, `--help`=[value]:
   print help for the `db update` sub command
-
-  * `-o`, `--organization`=[value]:
-  organizational owner of the database
 
   * `-l`, `--label`=[value]:
   label to use for this database
