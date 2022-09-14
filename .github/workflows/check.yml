@@ -25,18 +25,12 @@ jobs:
         with:
           name: terminusdb-server-docker-image
 
-      - name: Run Docker on tmpfs
-        uses: JonasAlfredsson/docker-on-tmpfs@v1
-        with:
-          tmpfs_size: 5
-          swap_size: 4
-          swap_location: '/mnt/swapfile'
-
       - name: Run tests
         run: |
           docker load < terminusdb-server-docker-image.tar.gz
           docker run \
             terminusdb/terminusdb-server:local \
+            --mount type=tmpfs,destination=/app/terminusdb/storage \
             make test
 
   python_client:
@@ -48,13 +42,6 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: terminusdb-server-docker-image
-
-      - name: Run Docker on tmpfs
-        uses: JonasAlfredsson/docker-on-tmpfs@v1
-        with:
-          tmpfs_size: 5
-          swap_size: 4
-          swap_location: '/mnt/swapfile'
 
       - name: Load Docker image
         run: |
@@ -90,20 +77,13 @@ jobs:
         with:
           name: terminusdb-server-docker-image
 
-
-      - name: Run Docker on tmpfs
-        uses: JonasAlfredsson/docker-on-tmpfs@v1
-        with:
-          tmpfs_size: 5
-          swap_size: 4
-          swap_location: '/mnt/swapfile'
-
       - name: Run server
         run: |
           docker load < terminusdb-server-docker-image.tar.gz
           docker run \
             --detach \
             --net=host \
+            --mount type=tmpfs,destination=/app/terminusdb/storage \
             terminusdb/terminusdb-server:local
 
       - uses: actions/setup-node@v2
@@ -133,20 +113,13 @@ jobs:
         with:
           name: terminusdb-server-docker-image
 
-
-      - name: Run Docker on tmpfs
-        uses: JonasAlfredsson/docker-on-tmpfs@v1
-        with:
-          tmpfs_size: 5
-          swap_size: 4
-          swap_location: '/mnt/swapfile'
-
       - name: Run server
         run: |
           docker load < terminusdb-server-docker-image.tar.gz
           docker run \
             --detach \
             --net=host \
+            --mount type=tmpfs,destination=/app/terminusdb/storage \
             terminusdb/terminusdb-server:local
 
       - uses: actions/setup-node@v2
@@ -176,20 +149,13 @@ jobs:
         with:
           name: terminusdb-server-docker-image
 
-
-      - name: Run Docker on tmpfs
-        uses: JonasAlfredsson/docker-on-tmpfs@v1
-        with:
-          tmpfs_size: 5
-          swap_size: 4
-          swap_location: '/mnt/swapfile'
-
       - name: Run server
         run: |
           docker load < terminusdb-server-docker-image.tar.gz
           docker run \
             --detach \
             --net=host \
+            --mount type=tmpfs,destination=/app/terminusdb/storage \
             -e TERMINUSDB_INSECURE_USER_HEADER_ENABLED=true \
             -e TERMINUSDB_INSECURE_USER_HEADER='X-Forwarded-User' \
             terminusdb/terminusdb-server:local
@@ -220,20 +186,13 @@ jobs:
         with:
           name: terminusdb-server-docker-image
 
-
-      - name: Run Docker on tmpfs
-        uses: JonasAlfredsson/docker-on-tmpfs@v1
-        with:
-          tmpfs_size: 5
-          swap_size: 4
-          swap_location: '/mnt/swapfile'
-
       - name: Run server
         run: |
           docker load < terminusdb-server-docker-image.tar.gz
           docker run \
             --detach \
             --net=host \
+            --mount type=tmpfs,destination=/app/terminusdb/storage \
             -e TERMINUSDB_JWT_ENABLED=true \
             -e TERMINUSDB_JWT_AGENT_NAME_PROPERTY='http://terminusdb.com/schema/system#agent_name' \
             -e TERMINUSDB_SERVER_JWKS_ENDPOINT='https://cdn.terminusdb.com/jwks.json' \
