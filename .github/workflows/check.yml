@@ -31,7 +31,6 @@ jobs:
           docker run \
             --mount type=tmpfs,destination=/app/terminusdb/tests/storage \
             --mount type=tmpfs,destination=/app/terminusdb/storage \
-            --mount type=tmpfs,destination=/tmp \
             terminusdb/terminusdb-server:local \
             make test
 
@@ -87,7 +86,6 @@ jobs:
             --net=host \
             --mount type=tmpfs,destination=/app/terminusdb/tests/storage \
             --mount type=tmpfs,destination=/app/terminusdb/storage \
-            --mount type=tmpfs,destination=/tmp \
             terminusdb/terminusdb-server:local
 
       - uses: actions/setup-node@v2
@@ -125,7 +123,6 @@ jobs:
             --net=host \
             --mount type=tmpfs,destination=/app/terminusdb/tests/storage \
             --mount type=tmpfs,destination=/app/terminusdb/storage \
-            --mount type=tmpfs,destination=/tmp \
             terminusdb/terminusdb-server:local
 
       - uses: actions/setup-node@v2
@@ -163,7 +160,6 @@ jobs:
             --net=host \
             --mount type=tmpfs,destination=/app/terminusdb/tests/storage \
             --mount type=tmpfs,destination=/app/terminusdb/storage \
-            --mount type=tmpfs,destination=/tmp \
             -e TERMINUSDB_INSECURE_USER_HEADER_ENABLED=true \
             -e TERMINUSDB_INSECURE_USER_HEADER='X-Forwarded-User' \
             terminusdb/terminusdb-server:local
@@ -202,7 +198,6 @@ jobs:
             --net=host \
             --mount type=tmpfs,destination=/app/terminusdb/tests/storage \
             --mount type=tmpfs,destination=/app/terminusdb/storage \
-            --mount type=tmpfs,destination=/tmp \
             -e TERMINUSDB_JWT_ENABLED=true \
             -e TERMINUSDB_JWT_AGENT_NAME_PROPERTY='http://terminusdb.com/schema/system#agent_name' \
             -e TERMINUSDB_SERVER_JWKS_ENDPOINT='https://cdn.terminusdb.com/jwks.json' \
