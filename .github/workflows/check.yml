@@ -49,6 +49,13 @@ jobs:
         with:
           name: terminusdb-server-docker-image
 
+      - name: Run Docker on tmpfs
+        uses: JonasAlfredsson/docker-on-tmpfs@v1
+        with:
+          tmpfs_size: 5
+          swap_size: 4
+          swap_location: '/mnt/swapfile'
+
       - name: Load Docker image
         run: |
           docker load < terminusdb-server-docker-image.tar.gz
@@ -82,6 +89,14 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: terminusdb-server-docker-image
+
+
+      - name: Run Docker on tmpfs
+        uses: JonasAlfredsson/docker-on-tmpfs@v1
+        with:
+          tmpfs_size: 5
+          swap_size: 4
+          swap_location: '/mnt/swapfile'
 
       - name: Run server
         run: |
@@ -118,6 +133,14 @@ jobs:
         with:
           name: terminusdb-server-docker-image
 
+
+      - name: Run Docker on tmpfs
+        uses: JonasAlfredsson/docker-on-tmpfs@v1
+        with:
+          tmpfs_size: 5
+          swap_size: 4
+          swap_location: '/mnt/swapfile'
+
       - name: Run server
         run: |
           docker load < terminusdb-server-docker-image.tar.gz
@@ -152,6 +175,14 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: terminusdb-server-docker-image
+
+
+      - name: Run Docker on tmpfs
+        uses: JonasAlfredsson/docker-on-tmpfs@v1
+        with:
+          tmpfs_size: 5
+          swap_size: 4
+          swap_location: '/mnt/swapfile'
 
       - name: Run server
         run: |
@@ -188,6 +219,14 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: terminusdb-server-docker-image
+
+
+      - name: Run Docker on tmpfs
+        uses: JonasAlfredsson/docker-on-tmpfs@v1
+        with:
+          tmpfs_size: 5
+          swap_size: 4
+          swap_location: '/mnt/swapfile'
 
       - name: Run server
         run: |
