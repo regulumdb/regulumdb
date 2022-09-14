@@ -25,6 +25,13 @@ jobs:
         with:
           name: terminusdb-server-docker-image
 
+      - name: Run Docker on tmpfs
+        uses: JonasAlfredsson/docker-on-tmpfs@v1
+        with:
+          tmpfs_size: 5
+          swap_size: 4
+          swap_location: '/mnt/swapfile'
+
       - name: Run tests
         run: |
           docker load < terminusdb-server-docker-image.tar.gz
