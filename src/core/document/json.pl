@@ -352,23 +352,23 @@ idgen_suffix(Values, Suffix) :-
 
 idgen_lexical(Base,Values,ID) :-
     idgen_suffix(Values, Suffix),
-    format(string(ID), '~w~w', [Base,Suffix]).
+    format(string(ID), '~w/~w', [Base,Suffix]).
 
 idgen_hash(Base,Values,ID) :-
     idgen_suffix(Values, Suffix),
     crypto_data_hash(Suffix, Hash, [algorithm(sha256)]),
-    format(string(ID), "~w~w", [Base,Hash]).
+    format(string(ID), "~w/~w", [Base,Hash]).
 
 idgen_path_values_hash(Base,Path,ID) :-
     format(string(A), '~q', [Path]),
     crypto_data_hash(A, Hash, [algorithm(sha256)]),
-    format(string(ID), "~w~w", [Base,Hash]).
+    format(string(ID), "~w/~w", [Base,Hash]).
 
 idgen_random(Base,ID) :-
     random(X),
     format(string(S), '~w', [X]),
     crypto_data_hash(S, Hash, [algorithm(sha256)]),
-    format(string(ID),'~w~w',[Base,Hash]).
+    format(string(ID),'~w/~w',[Base,Hash]).
 
 path_strings_([], _Prefixes, []).
 path_strings_([index(N)|Path], Prefixes, [N_String|Strings]) :-

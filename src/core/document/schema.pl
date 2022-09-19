@@ -975,7 +975,7 @@ schema_key_base(_Schema, Context, Type, Base) :-
     get_dict('@schema', Context, Schema),
     put_dict(_{'@base' : Schema}, Context, New_Context),
     compress_dict_uri(Type,New_Context,Type_Compressed),
-    atomic_list_concat([Type_Compressed,'/'],Base).
+    atomic_list_concat([Type_Compressed],Base).
 
 key_descriptor(Validation_Object, Type, Descriptor) :-
     database_prefixes(Validation_Object, Prefixes),
