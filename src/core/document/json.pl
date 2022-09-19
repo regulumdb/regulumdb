@@ -378,9 +378,9 @@ path_strings_([node(X)|Path], Prefixes, [URI|Strings]) :-
     compress_dict_uri(X, Prefixes, Compressed),
     (   (   uri_has_protocol(Compressed)
         ;   uri_has_prefix(Compressed))
-    ->  prefix_expand_schema(X, Prefixes, Intermediate),
+    ->  prefix_expand(X, Prefixes, Intermediate),
         encode_id_fragment(Intermediate,URI)
-    ;   encode_id_fragment(Compressed,URI)
+    ;   Compressed = URI
     ),
     path_strings_(Path, Prefixes, Strings).
 path_strings_([property(X)|Path], Prefixes, [URI|Strings]) :-
