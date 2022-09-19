@@ -378,8 +378,9 @@ path_strings_([node(X)|Path], Prefixes, [URI|Strings]) :-
     compress_dict_uri(X, Prefixes, Compressed),
     (   (   uri_has_protocol(Compressed)
         ;   uri_has_prefix(Compressed))
-    ->  prefix_expand(X, Prefixes, URI)
-    ;   Compressed = URI
+    ->  prefix_expand_schema(X, Prefixes, Intermediate),
+        encode_id_fragment(Intermediate,URI)
+    ;   encode_id_fragment(Compressed,URI)
     ),
     path_strings_(Path, Prefixes, Strings).
 path_strings_([property(X)|Path], Prefixes, [URI|Strings]) :-
@@ -387,8 +388,9 @@ path_strings_([property(X)|Path], Prefixes, [URI|Strings]) :-
     compress_schema_uri(X, Prefixes, Compressed),
     (   (   uri_has_protocol(Compressed)
         ;   uri_has_prefix(Compressed))
-    ->  prefix_expand_schema(X, Prefixes, URI)
-    ;   Compressed = URI
+    ->  prefix_expand_schema(X, Prefixes, Intermediate),
+        encode_id_fragment(Intermediate,URI)
+    ;   encode_id_fragment(Compressed,URI)
     ),
     path_strings_(Path, Prefixes, Strings).
 path_strings_([type(X)|Path], Prefixes, [URI|Strings]) :-
@@ -396,8 +398,9 @@ path_strings_([type(X)|Path], Prefixes, [URI|Strings]) :-
     compress_schema_uri(X, Prefixes, Compressed),
     (   (   uri_has_protocol(Compressed)
         ;   uri_has_prefix(Compressed))
-    ->  prefix_expand_schema(X, Prefixes, URI)
-    ;   Compressed = URI
+    ->  prefix_expand_schema(X, Prefixes, Intermediate),
+        encode_id_fragment(Intermediate,URI)
+    ;   encode_id_fragment(Compressed,URI)
     ),
     path_strings_(Path, Prefixes, Strings).
 
