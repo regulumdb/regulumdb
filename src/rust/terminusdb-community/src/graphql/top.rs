@@ -1024,11 +1024,11 @@ fn lookup_field_requests(
         panic!("Somehow there are no constraints on the triples")
     } else {
         let (p, oty, o) = constraints[0];
-        let zero_iter: &mut _ = predicate_value_iter(g, p, oty, o);
+        let zero_iter: &mut _ = &mut predicate_value_iter(g, p, oty, o);
         constraints
             .iter()
             .fold(zero_iter, |iter, (p, oty, o)| {
-                predicate_value_filter(g, &iter.to_ref(), p, oty, o)
+                predicate_value_filter(g, iter, p, oty, o)
             })
             .map(|t| Branch { id: t.subject })
             .collect()
