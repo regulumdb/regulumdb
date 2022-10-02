@@ -1,3 +1,4 @@
+use crate::graphql::schema::TerminusType;
 use crate::terminus_store::layer::IdTriple;
 use crate::terminus_store::store::sync::*;
 use crate::terminus_store::Layer as TSLayer;
@@ -7,6 +8,8 @@ use juniper::{self, graphql_interface, graphql_object, GraphQLEnum, GraphQLObjec
 use std::iter::Filter;
 use swipl::prelude::*;
 
+use super::frame::AllFrames;
+
 pub struct Info {
     system: SyncStoreLayer,
     meta: Option<SyncStoreLayer>,
@@ -14,6 +17,7 @@ pub struct Info {
     branch: Option<SyncStoreLayer>,
     schema: Option<SyncStoreLayer>,
     user: Atom,
+    frames: Option<AllFrames>,
 }
 
 impl juniper::Context for Info {}
@@ -58,6 +62,7 @@ impl Info {
             branch,
             schema: None,
             user,
+            frames: None,
         })
     }
 }
@@ -853,6 +858,7 @@ impl AbstractCommit for InvalidCommit {
 pub struct Query;
 
 #[graphql_object(context = Info)]
+#[no_async]
 impl Query {
     /// Get the user that is currently logged in.
     fn user(#[graphql(context)] _info: &Info) -> User {
