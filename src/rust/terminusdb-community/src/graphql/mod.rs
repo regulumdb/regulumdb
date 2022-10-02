@@ -1,8 +1,6 @@
 use juniper::{
     http::{graphiql::graphiql_source, GraphQLRequest},
-    EmptyMutation,
-    EmptySubscription,
-    RootNode,
+    EmptyMutation, EmptySubscription, RootNode,
 };
 
 use std::io::{Read, Write};
