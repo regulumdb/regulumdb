@@ -1,6 +1,10 @@
-use serde::{self, Deserialize, de::{Visitor, MapAccess}};
-use swipl::prelude::Atom;
+use serde::{
+    self,
+    de::{MapAccess, Visitor},
+    Deserialize,
+};
 use std::collections::BTreeMap;
+use swipl::prelude::Atom;
 
 #[derive(Deserialize, PartialEq, Debug)]
 pub struct Prefixes {
@@ -9,32 +13,55 @@ pub struct Prefixes {
     #[serde(rename = "@schema")]
     pub schema: String,
     #[serde(flatten)]
-    pub extra_prefixes: BTreeMap<String, String>
+    pub extra_prefixes: BTreeMap<String, String>,
 }
 
 #[derive(Deserialize, PartialEq, Debug)]
-pub struct ClassDocumentationDefinition {
-}
+pub struct ClassDocumentationDefinition {}
 
 #[inline]
-fn default_dimensionality() -> usize { 1 }
+fn default_dimensionality() -> usize {
+    1
+}
 
 #[derive(Deserialize, PartialEq, Debug)]
 #[serde(tag = "@type")]
 enum StructuralComplexFieldDefinition {
-    Optional{#[serde(rename = "@class")]class: StructuralInnerFieldDefinition},
-    Set{#[serde(rename = "@class")]class: StructuralInnerFieldDefinition},
-    Array{#[serde(rename = "@class")]class: StructuralInnerFieldDefinition, #[serde(default = "default_dimensionality")] dimensions: usize},
-    List{#[serde(rename = "@class")]class: StructuralInnerFieldDefinition},
-    Cardinality{#[serde(rename = "@class")]class: StructuralInnerFieldDefinition, min: Option<usize>, max: Option<usize>},
-    Enum{#[serde(rename = "@id")] id: String, values: Vec<String>}
-
+    Optional {
+        #[serde(rename = "@class")]
+        class: StructuralInnerFieldDefinition,
+    },
+    Set {
+        #[serde(rename = "@class")]
+        class: StructuralInnerFieldDefinition,
+    },
+    Array {
+        #[serde(rename = "@class")]
+        class: StructuralInnerFieldDefinition,
+        #[serde(default = "default_dimensionality")]
+        dimensions: usize,
+    },
+    List {
+        #[serde(rename = "@class")]
+        class: StructuralInnerFieldDefinition,
+    },
+    Cardinality {
+        #[serde(rename = "@class")]
+        class: StructuralInnerFieldDefinition,
+        min: Option<usize>,
+        max: Option<usize>,
+    },
+    Enum {
+        #[serde(rename = "@id")]
+        id: String,
+        values: Vec<String>,
+    },
 }
 
 #[derive(Deserialize, PartialEq, Debug)]
 struct StructuralSubdocumentFieldDefinition {
     #[serde(rename = "@class")]
-    class: String
+    class: String,
 }
 
 #[derive(Deserialize, PartialEq, Debug)]
@@ -42,7 +69,7 @@ struct StructuralSubdocumentFieldDefinition {
 enum StructuralInnerFieldDefinition {
     SimpleField(String),
     Enum(StructuralEnumFieldDefinition),
-    SubdocumentField(StructuralSubdocumentFieldDefinition)
+    SubdocumentField(StructuralSubdocumentFieldDefinition),
 }
 
 #[derive(Deserialize, PartialEq, Debug)]
@@ -50,7 +77,7 @@ struct StructuralEnumFieldDefinition {
     #[serde(rename = "@type")]
     typ: String,
     id: String,
-    values: Vec<String>
+    values: Vec<String>,
 }
 
 impl From<StructuralInnerFieldDefinition> for SimpleFieldDefinition {
@@ -59,15 +86,24 @@ impl From<StructuralInnerFieldDefinition> for SimpleFieldDefinition {
             StructuralInnerFieldDefinition::SimpleField(s) => {
                 if is_base_type(&s) {
                     SimpleFieldDefinition::BaseType(s)
+                } else {
+                    SimpleFieldDefinition::Document {
+                        typ: s,
+                        is_subdocument: false,
+                    }
                 }
-                else {
-                    SimpleFieldDefinition::Document{typ: s, is_subdocument: false}
+            }
+            StructuralInnerFieldDefinition::Enum(StructuralEnumFieldDefinition {
+                id,
+                values,
+                ..
+            }) => SimpleFieldDefinition::Enum { name: id, values },
+            StructuralInnerFieldDefinition::SubdocumentField(s) => {
+                SimpleFieldDefinition::Document {
+                    typ: s.class,
+                    is_subdocument: true,
                 }
-            },
-            StructuralInnerFieldDefinition::Enum(StructuralEnumFieldDefinition {id, values, ..}) =>
-                SimpleFieldDefinition::Enum{name: id, values},
-            StructuralInnerFieldDefinition::SubdocumentField(s) =>
-                    SimpleFieldDefinition::Document{typ: s.class, is_subdocument: true},
+            }
         }
     }
 }
@@ -77,22 +113,22 @@ impl From<StructuralInnerFieldDefinition> for SimpleFieldDefinition {
 enum StructuralFieldDefinition {
     SimpleField(String),
     ContainerField(StructuralComplexFieldDefinition),
-    SubdocumentField(StructuralSubdocumentFieldDefinition)
+    SubdocumentField(StructuralSubdocumentFieldDefinition),
 }
 
 #[derive(PartialEq, Debug)]
 pub enum SimpleFieldDefinition {
     BaseType(String),
-    Document{typ: String, is_subdocument: bool},
-    Enum{name: String, values: Vec<String>},
+    Document { typ: String, is_subdocument: bool },
+    Enum { name: String, values: Vec<String> },
 }
 
 impl SimpleFieldDefinition {
     pub fn document_type(&self) -> Option<&str> {
         match self {
             Self::BaseType(s) => None,
-            Self::Document{typ: s, ..} => Some(s),
-            Self::Enum{..} => None
+            Self::Document { typ: s, .. } => Some(s),
+            Self::Enum { .. } => None,
         }
     }
 }
@@ -105,8 +141,15 @@ pub enum FieldDefinition {
     Set(SimpleFieldDefinition),
     List(SimpleFieldDefinition),
 
-    Array{field: SimpleFieldDefinition, dimensions: usize},
-    Cardinality{field: SimpleFieldDefinition, min: Option<usize>, max: Option<usize>},
+    Array {
+        field: SimpleFieldDefinition,
+        dimensions: usize,
+    },
+    Cardinality {
+        field: SimpleFieldDefinition,
+        min: Option<usize>,
+        max: Option<usize>,
+    },
 }
 
 #[derive(PartialEq)]
@@ -116,7 +159,7 @@ pub enum FieldKind {
     Set,
     List,
     Array,
-    Cardinality
+    Cardinality,
 }
 
 impl FieldDefinition {
@@ -126,8 +169,8 @@ impl FieldDefinition {
             Self::Optional(f) => f.document_type(),
             Self::Set(f) => f.document_type(),
             Self::List(f) => f.document_type(),
-            Self::Array{field: f, ..} => f.document_type(),
-            Self::Cardinality{field: f, ..} => f.document_type(),
+            Self::Array { field: f, .. } => f.document_type(),
+            Self::Cardinality { field: f, .. } => f.document_type(),
         }
     }
 
@@ -137,8 +180,8 @@ impl FieldDefinition {
             Self::Optional(_) => FieldKind::Optional,
             Self::Set(_) => FieldKind::Set,
             Self::List(_) => FieldKind::List,
-            Self::Array{..} => FieldKind::Array,
-            Self::Cardinality{..} => FieldKind::Cardinality,
+            Self::Array { .. } => FieldKind::Array,
+            Self::Cardinality { .. } => FieldKind::Cardinality,
         }
     }
 }
@@ -151,23 +194,50 @@ fn is_base_type(s: &str) -> bool {
 impl From<StructuralFieldDefinition> for FieldDefinition {
     fn from(f: StructuralFieldDefinition) -> Self {
         match f {
-             StructuralFieldDefinition::SimpleField(s) => {
+            StructuralFieldDefinition::SimpleField(s) => {
                 if is_base_type(&s) {
                     FieldDefinition::Required(SimpleFieldDefinition::BaseType(s))
+                } else {
+                    FieldDefinition::Required(SimpleFieldDefinition::Document {
+                        typ: s,
+                        is_subdocument: false,
+                    })
                 }
-                else {
-                    FieldDefinition::Required(SimpleFieldDefinition::Document{typ: s, is_subdocument: false})
-                }
+            }
+
+            StructuralFieldDefinition::ContainerField(
+                StructuralComplexFieldDefinition::Optional { class },
+            ) => FieldDefinition::Optional(class.into()),
+            StructuralFieldDefinition::ContainerField(StructuralComplexFieldDefinition::Set {
+                class,
+            }) => FieldDefinition::Set(class.into()),
+            StructuralFieldDefinition::ContainerField(StructuralComplexFieldDefinition::List {
+                class,
+            }) => FieldDefinition::List(class.into()),
+            StructuralFieldDefinition::ContainerField(
+                StructuralComplexFieldDefinition::Array { class, dimensions },
+            ) => FieldDefinition::Array {
+                field: class.into(),
+                dimensions,
             },
+            StructuralFieldDefinition::ContainerField(
+                StructuralComplexFieldDefinition::Cardinality { class, min, max },
+            ) => FieldDefinition::Cardinality {
+                field: class.into(),
+                min,
+                max,
+            },
+            StructuralFieldDefinition::ContainerField(StructuralComplexFieldDefinition::Enum {
+                id,
+                values,
+            }) => FieldDefinition::Required(SimpleFieldDefinition::Enum { name: id, values }),
 
-            StructuralFieldDefinition::ContainerField(StructuralComplexFieldDefinition::Optional{class}) => FieldDefinition::Optional(class.into()),
-            StructuralFieldDefinition::ContainerField(StructuralComplexFieldDefinition::Set{class}) => FieldDefinition::Set(class.into()),
-            StructuralFieldDefinition::ContainerField(StructuralComplexFieldDefinition::List{class}) => FieldDefinition::List(class.into()),
-            StructuralFieldDefinition::ContainerField(StructuralComplexFieldDefinition::Array{class, dimensions}) => FieldDefinition::Array{field: class.into(), dimensions},
-            StructuralFieldDefinition::ContainerField(StructuralComplexFieldDefinition::Cardinality{class, min, max}) => FieldDefinition::Cardinality{field: class.into(), min, max},
-            StructuralFieldDefinition::ContainerField(StructuralComplexFieldDefinition::Enum{id, values}) => FieldDefinition::Required(SimpleFieldDefinition::Enum{name: id, values}),
-
-            StructuralFieldDefinition::SubdocumentField(StructuralSubdocumentFieldDefinition{class}) => FieldDefinition::Required(SimpleFieldDefinition::Document{typ: class, is_subdocument: true})
+            StructuralFieldDefinition::SubdocumentField(StructuralSubdocumentFieldDefinition {
+                class,
+            }) => FieldDefinition::Required(SimpleFieldDefinition::Document {
+                typ: class,
+                is_subdocument: true,
+            }),
         }
     }
 }
@@ -176,9 +246,15 @@ impl From<StructuralFieldDefinition> for FieldDefinition {
 #[serde(tag = "@type")]
 pub enum KeyDefinition {
     Random,
-    Lexical{#[serde(rename = "@fields")] fields: Vec<String>},
-    Hash{#[serde(rename = "@fields")] fields: Vec<String>},
-    ValueHash
+    Lexical {
+        #[serde(rename = "@fields")]
+        fields: Vec<String>,
+    },
+    Hash {
+        #[serde(rename = "@fields")]
+        fields: Vec<String>,
+    },
+    ValueHash,
 }
 
 #[derive(Deserialize, PartialEq, Debug)]
@@ -186,36 +262,34 @@ pub struct ClassDefinition {
     pub documentation: Option<ClassDocumentationDefinition>,
     pub key: Option<KeyDefinition>,
     #[serde(flatten)]
-    pub fields: BTreeMap<String, FieldDefinition>
+    pub fields: BTreeMap<String, FieldDefinition>,
 }
 #[derive(Deserialize, PartialEq, Debug)]
 pub struct TaggedUnionDefinition;
 
 #[derive(Deserialize, PartialEq, Debug)]
-pub struct EnumDocumentationDefinition {
-}
-
+pub struct EnumDocumentationDefinition {}
 
 #[derive(Deserialize, PartialEq, Debug)]
 pub struct EnumDefinition {
     pub documentation: Option<EnumDocumentationDefinition>,
     #[serde(rename = "@values")]
-    pub values: Vec<String>
+    pub values: Vec<String>,
 }
 
 #[derive(Deserialize, PartialEq, Debug)]
-#[serde(tag="@type")]
+#[serde(tag = "@type")]
 pub enum TypeDefinition {
     Class(ClassDefinition),
     TaggedUnion(TaggedUnionDefinition),
-    Enum(EnumDefinition)
+    Enum(EnumDefinition),
 }
 
 #[derive(PartialEq)]
 pub enum TypeKind {
     Class,
     TaggedUnion,
-    Enum
+    Enum,
 }
 
 impl TypeDefinition {
@@ -223,7 +297,7 @@ impl TypeDefinition {
         match self {
             Self::Class(_) => TypeKind::Class,
             Self::TaggedUnion(_) => TypeKind::TaggedUnion,
-            Self::Enum(_) => TypeKind::Enum
+            Self::Enum(_) => TypeKind::Enum,
         }
     }
 }
@@ -233,7 +307,7 @@ pub struct AllFrames {
     #[serde(rename = "@context")]
     pub context: Prefixes,
     #[serde(flatten)]
-    pub frames: BTreeMap<String, TypeDefinition>
+    pub frames: BTreeMap<String, TypeDefinition>,
 }
 
 #[cfg(test)]
@@ -257,14 +331,17 @@ _{'@base': "http://some_base/",
 
         let prefixes: Prefixes = context.deserialize_from_term(&term).unwrap();
 
-        assert_eq!(Prefixes {
-            base: "http://some_base/".to_string(),
-            schema: "http://some_schema#".to_string(),
-            extra_prefixes: BTreeMap::from([("a".to_string(), "http://extra_prefix/a".to_string()),
-                                            ("b".to_string(), "http://extra_prefix/b".to_string())])
-        },
-                   prefixes);
-
+        assert_eq!(
+            Prefixes {
+                base: "http://some_base/".to_string(),
+                schema: "http://some_schema#".to_string(),
+                extra_prefixes: BTreeMap::from([
+                    ("a".to_string(), "http://extra_prefix/a".to_string()),
+                    ("b".to_string(), "http://extra_prefix/b".to_string())
+                ])
+            },
+            prefixes
+        );
     }
 
     #[test]
@@ -295,7 +372,6 @@ _{'@type': "Lexical", '@fields': ["foo", "bar"]}
         let typedef: KeyDefinition = context.deserialize_from_term(&term).unwrap();
 
         panic!("{:?}", typedef);
-
     }
 
     #[test]
@@ -306,7 +382,7 @@ _{'@type': "Lexical", '@fields': ["foo", "bar"]}
 
         let term = r#"json{'@context':_27018{'@base':"terminusdb:///data/",'@schema':"terminusdb:///schema#",'@type':'Context'},'Test':json{'@type':'Class',bar:'xsd:string',foo:'xsd:integer'}}"#;
         let term = unwrap_result(&context, context.term_from_string(term));
-        let frames: AllFrames  = context.deserialize_from_term(&term).unwrap();
+        let frames: AllFrames = context.deserialize_from_term(&term).unwrap();
 
         panic!("{:?}", frames);
     }
@@ -475,9 +551,8 @@ json{ '@context':_{ '@base':"terminusdb://system/data/",
     }"#;
 
         let term = unwrap_result(&context, context.term_from_string(term));
-        let frames: AllFrames  = context.deserialize_from_term(&term).unwrap();
+        let frames: AllFrames = context.deserialize_from_term(&term).unwrap();
 
         panic!("{:?}", frames);
     }
-
 }

@@ -7,13 +7,16 @@ use std::io::{Read, Write};
 use std::sync::Arc;
 use swipl::prelude::*;
 
-mod top;
 mod frame;
 mod schema;
+mod top;
 
 use top::*;
 
-use self::{frame::AllFrames, schema::{TerminusType, TerminusTypeCollection}};
+use self::{
+    frame::AllFrames,
+    schema::{TerminusType, TerminusTypeCollection},
+};
 
 predicates! {
     #[module("$graphql")]
@@ -35,9 +38,13 @@ predicates! {
         let frames: AllFrames = context.deserialize_from_term(&frame_term).expect("aaa");
         log_info!(context, "parsed frames: {:?}", frames)?;
 
-        let root_node = RootNode::new_with_info(TerminusTypeCollection, EmptyMutation::<Info>::new(), EmptySubscription::<Info>::new(), Arc::new(frames), (), ());
+        let root_node = RootNode::new(Query, EmptyMutation::<Info>::new(), EmptySubscription::<Info>::new());
         let graphql_context = Info::new(context, system_term, meta_term, commit_term, branch_term, auth_term)?;
 
+        /*
+        let root_node = RootNode::new_with_info(TerminusTypeCollection, EmptyMutation::<Info>::new(), EmptySubscription::<Info>::new(), Arc::new(frames), (), ());
+        let graphql_context = Info::new(context, system_term, meta_term, commit_term, branch_term, auth_term)?;
+         */
         let response = request.execute_sync(&root_node, &graphql_context);
 
         log_debug!(context, "graphql response: {:?}", response)?;

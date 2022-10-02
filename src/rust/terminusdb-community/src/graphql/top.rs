@@ -926,7 +926,9 @@ impl Query {
                 name, "http://www.w3.org/2001/XMLSchema#string"
             )
         });
-        //        lookup_field_requests(
+        /*
+        Old style manually
+
         maybe_get_predicate_value_type(
             info,
             "http://terminusdb.com/schema/ref#Branch",
@@ -936,6 +938,26 @@ impl Query {
         .into_iter()
         .flatten()
         .collect()
+         */
+        if let Some(commit) = info.commit.as_ref() {
+            lookup_field_requests(
+                &commit,
+                vec![
+                    (
+                        "http://terminusdb.com/schema/ref#name".to_string(),
+                        ObjectType::Value,
+                        branch_string_val,
+                    ),
+                    (
+                        "http://www.w3.org/1999/02/22-rdf-syntax-ns#type".to_string(),
+                        ObjectType::Node,
+                        Some("http://terminusdb.com/schema/ref#Branch".to_string()),
+                    ),
+                ],
+            )
+        } else {
+            Vec::new()
+        }
     }
 }
 
@@ -955,38 +977,12 @@ fn get_graph(gt: GraphType, info: &Info) -> Option<SyncStoreLayer> {
     }
 }
 
-fn predicate_value_iter<'a>(
-    g: &'a SyncStoreLayer,
-    property: &'a str,
-    object_type: &ObjectType,
-    object: &'a str,
-) -> Box<dyn Iterator<Item = IdTriple> + 'a> {
-    let maybe_property_id = g.predicate_id(property);
-    if let Some(property_id) = maybe_property_id {
-        let maybe_object_id = match object_type {
-            ObjectType::Value => g.object_value_id(object),
-            ObjectType::Node => g.object_node_id(object),
-        };
-        if let Some(object_id) = maybe_object_id {
-            Box::new(
-                g.triples_o(object_id)
-                    .filter(move |t| t.predicate == property_id),
-            )
-        } else {
-            Box::new(std::iter::empty())
-        }
-    } else {
-        Box::new(std::iter::empty())
-    }
-}
-
-fn predicate_value_filter<'a>(
-    g: &'a SyncStoreLayer,
-    iter: &'a mut Box<dyn Iterator<Item = IdTriple>>,
+fn predicate_value_candidates(
+    g: &SyncStoreLayer,
     property: &str,
     object_type: &ObjectType,
     object: &str,
-) -> Box<dyn Iterator<Item = IdTriple> + 'a> {
+) -> Vec<u64> {
     let maybe_property_id = g.predicate_id(property);
     if let Some(property_id) = maybe_property_id {
         let maybe_object_id = match object_type {
@@ -994,12 +990,43 @@ fn predicate_value_filter<'a>(
             ObjectType::Node => g.object_node_id(object),
         };
         if let Some(object_id) = maybe_object_id {
-            Box::new(iter.filter(move |t| g.triple_exists(t.subject, property_id, object_id)))
+            g.triples_o(object_id)
+                .filter(move |t| t.predicate == property_id)
+                .map(|t| t.subject)
+                .collect()
         } else {
-            Box::new(std::iter::empty())
+            Vec::new()
         }
     } else {
-        Box::new(std::iter::empty())
+        Vec::new()
+    }
+}
+
+fn predicate_value_filter(
+    g: &SyncStoreLayer,
+    candidates: Vec<u64>,
+    property: &str,
+    object_type: &ObjectType,
+    object: &str,
+) -> Vec<u64> {
+    let maybe_property_id = g.predicate_id(property);
+    if let Some(property_id) = maybe_property_id {
+        let maybe_object_id = match object_type {
+            ObjectType::Value => g.object_value_id(object),
+            ObjectType::Node => g.object_node_id(object),
+        };
+        if let Some(object_id) = maybe_object_id {
+            let res: Vec<u64> = candidates
+                .iter()
+                .cloned()
+                .filter(|&subject_id| g.triple_exists(subject_id, property_id, object_id))
+                .collect();
+            res
+        } else {
+            Vec::new()
+        }
+    } else {
+        Vec::new()
     }
 }
 
@@ -1024,13 +1051,14 @@ fn lookup_field_requests(
         panic!("Somehow there are no constraints on the triples")
     } else {
         let (p, oty, o) = constraints[0];
-        let zero_iter: &mut _ = &mut predicate_value_iter(g, p, oty, o);
+        let candidates: Vec<u64> = predicate_value_candidates(g, p, oty, o);
         constraints
             .iter()
-            .fold(zero_iter, |iter, (p, oty, o)| {
-                predicate_value_filter(g, iter, p, oty, o)
+            .fold(candidates, |res, (p, oty, o)| {
+                predicate_value_filter(g, res, p, oty, o)
             })
-            .map(|t| Branch { id: t.subject })
+            .iter()
+            .map(|&id| Branch { id })
             .collect()
     }
 }
