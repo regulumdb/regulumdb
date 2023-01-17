@@ -162,7 +162,8 @@ info_handler(get, Request, System_DB, Auth) :-
                 [method(Method),
                  methods([options,get])]).
 
-ok_handler(_Method, _Request, _System_DB, _Auth) :-
+ok_handler(_Method, Request, _System_DB, _Auth) :-
+    write_cors_headers(Request),
     format('Content-type: application/octets~n', []),
     format('Status: 200 OK~n~n', []).
 
