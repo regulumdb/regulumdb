@@ -7,112 +7,160 @@ use swipl::prelude::*;
 use swipl::term::Term;
 use terminus_store::structure::*;
 
+lazy_static! {
+    static ref ATOM_BOOL: Atom = atom!("http://www.w3.org/2001/XMLSchema#boolean");
+    static ref ATOM_STRING: Atom = atom!("http://www.w3.org/2001/XMLSchema#string");
+    static ref ATOM_LANG: Atom = atom!("http://www.w3.org/2001/XMLSchema#language");
+    static ref ATOM_NORM_STRING: Atom = atom!("http://www.w3.org/2001/XMLSchema#normalizedString");
+    static ref ATOM_TOKEN: Atom = atom!("http://www.w3.org/2001/XMLSchema#token");
+    static ref ATOM_NMTOKEN: Atom = atom!("http://www.w3.org/2001/XMLSchema#NMTOKEN");
+    static ref ATOM_NAME: Atom = atom!("http://www.w3.org/2001/XMLSchema#Name");
+    static ref ATOM_NCNAME: Atom = atom!("http://www.w3.org/2001/XMLSchema#NCName");
+    static ref ATOM_NOTATION: Atom = atom!("http://www.w3.org/2001/XMLSchema#Notation");
+    static ref ATOM_QNAME: Atom = atom!("http://www.w3.org/2001/XMLSchema#QName");
+    static ref ATOM_ID: Atom = atom!("http://www.w3.org/2001/XMLSchema#ID");
+    static ref ATOM_IDREF: Atom = atom!("http://www.w3.org/2001/XMLSchema#IDRef");
+    static ref ATOM_ENTITY: Atom = atom!("http://www.w3.org/2001/XMLSchema#Entity");
+    static ref ATOM_ANYURI: Atom = atom!("http://www.w3.org/2001/XMLSchema#anyURI");
+    static ref ATOM_ANYSIMPLETYPE: Atom = atom!("http://www.w3.org/2001/XMLSchema#anySimpleType");
+    static ref ATOM_UNSIGNEDBYTE: Atom = atom!("http://www.w3.org/2001/XMLSchema#unsignedByte");
+    static ref ATOM_BYTE: Atom = atom!("http://www.w3.org/2001/XMLSchema#byte");
+    static ref ATOM_UNSIGNEDSHORT: Atom = atom!("http://www.w3.org/2001/XMLSchema#unsignedShort");
+    static ref ATOM_SHORT: Atom = atom!("http://www.w3.org/2001/XMLSchema#short");
+    static ref ATOM_UNSIGNEDINT: Atom = atom!("http://www.w3.org/2001/XMLSchema#unsignedInt");
+    static ref ATOM_INT: Atom = atom!("http://www.w3.org/2001/XMLSchema#int");
+    static ref ATOM_UNSIGNEDLONG: Atom = atom!("http://www.w3.org/2001/XMLSchema#unsignedLong");
+    static ref ATOM_LONG: Atom = atom!("http://www.w3.org/2001/XMLSchema#long");
+    static ref ATOM_FLOAT: Atom = atom!("http://www.w3.org/2001/XMLSchema#float");
+    static ref ATOM_DOUBLE: Atom = atom!("http://www.w3.org/2001/XMLSchema#double");
+    static ref ATOM_DECIMAL: Atom = atom!("http://www.w3.org/2001/XMLSchema#decimal");
+    static ref ATOM_INTEGER: Atom = atom!("http://www.w3.org/2001/XMLSchema#integer");
+    static ref ATOM_POSINTEGER: Atom = atom!("http://www.w3.org/2001/XMLSchema#positiveInteger");
+    static ref ATOM_NEGINTEGER: Atom = atom!("http://www.w3.org/2001/XMLSchema#negativeInteger");
+    static ref ATOM_NONPOSINTEGER: Atom = atom!("http://www.w3.org/2001/XMLSchema#nonPositiveInteger");
+    static ref ATOM_NONNEGINTEGER: Atom = atom!("http://www.w3.org/2001/XMLSchema#nonNegativeInteger");
+    static ref ATOM_GYEAR: Atom = atom!("http://www.w3.org/2001/XMLSchema#gYear");
+    static ref ATOM_GMONTH: Atom = atom!("http://www.w3.org/2001/XMLSchema#gMonth");
+    static ref ATOM_GDAY: Atom = atom!("http://www.w3.org/2001/XMLSchema#gDay");
+    static ref ATOM_GYEARMONTH: Atom = atom!("http://www.w3.org/2001/XMLSchema#gYearMonth");
+    static ref ATOM_GMONTHDAY: Atom = atom!("http://www.w3.org/2001/XMLSchema#gMonthDay");
+    static ref ATOM_DURATION: Atom = atom!("http://www.w3.org/2001/XMLSchema#duration");
+    static ref ATOM_YEARMONTHDURATION: Atom = atom!("http://www.w3.org/2001/XMLSchema#yearMonthDuration");
+    static ref ATOM_DAYTIMEDURATION: Atom = atom!("http://www.w3.org/2001/XMLSchema#dayTimeDuration");
+    static ref ATOM_DATETIME: Atom = atom!("http://www.w3.org/2001/XMLSchema#dateTime");
+    static ref ATOM_DATETIMESTAMP: Atom = atom!("http://www.w3.org/2001/XMLSchema#dateTimeStamp");
+    static ref ATOM_DATE: Atom = atom!("http://www.w3.org/2001/XMLSchema#date");
+    static ref ATOM_TIME: Atom = atom!("http://www.w3.org/2001/XMLSchema#time");
+    static ref ATOM_BASE64BIN: Atom = atom!("http://www.w3.org/2001/XMLSchema#base64Binary");
+    static ref ATOM_HEXBIN: Atom = atom!("http://www.w3.org/2001/XMLSchema#hexBinary");
+}
+
 pub fn make_entry_from_term<C: QueryableContextType>(
     context: &Context<C>,
     inner_term: &Term,
     ty_term: &Term,
 ) -> PrologResult<TypedDictEntry> {
     let ty: Atom = ty_term.get_ex()?;
-    if atom!("http://www.w3.org/2001/XMLSchema#boolean") == ty {
+    if *ATOM_BOOL == ty {
         let inner: Atom = inner_term.get_ex()?;
         let b = inner == atom!("true");
         Ok(bool::make_entry(&b))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#string") == ty {
+    } else if *ATOM_STRING == ty {
         let inner_string: PrologText = inner_term.get_ex()?;
         Ok(String::make_entry(&inner_string.into_inner()))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#language") == ty {
+    } else if *ATOM_LANG == ty {
         let inner_string: PrologText = inner_term.get_ex()?;
         Ok(Language::make_entry(&inner_string.into_inner()))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#normalizedString") == ty {
+    } else if *ATOM_NORM_STRING == ty {
         let inner_string: PrologText = inner_term.get_ex()?;
         Ok(NormalizedString::make_entry(&inner_string.into_inner()))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#token") == ty {
+    } else if *ATOM_TOKEN == ty {
         let inner_string: PrologText = inner_term.get_ex()?;
         Ok(Token::make_entry(&inner_string.into_inner()))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#NMTOKEN") == ty {
+    } else if *ATOM_NMTOKEN == ty {
         let inner_string: PrologText = inner_term.get_ex()?;
         Ok(NMToken::make_entry(&inner_string.into_inner()))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#Name") == ty {
+    } else if *ATOM_NAME == ty {
         let inner_string: PrologText = inner_term.get_ex()?;
         Ok(Name::make_entry(&inner_string.into_inner()))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#NCName") == ty {
+    } else if *ATOM_NCNAME == ty {
         let inner_string: PrologText = inner_term.get_ex()?;
         Ok(NCName::make_entry(&inner_string.into_inner()))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#Notation") == ty {
+    } else if *ATOM_NOTATION == ty {
         let inner_string: PrologText = inner_term.get_ex()?;
         Ok(Notation::make_entry(&inner_string.into_inner()))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#QName") == ty {
+    } else if *ATOM_QNAME == ty {
         let inner_string: PrologText = inner_term.get_ex()?;
         Ok(QName::make_entry(&inner_string.into_inner()))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#ID") == ty {
+    } else if *ATOM_ID == ty {
         let inner_string: PrologText = inner_term.get_ex()?;
         Ok(ID::make_entry(&inner_string.into_inner()))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#IDRef") == ty {
+    } else if *ATOM_IDREF == ty {
         let inner_string: PrologText = inner_term.get_ex()?;
         Ok(IDRef::make_entry(&inner_string.into_inner()))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#Entity") == ty {
+    } else if *ATOM_ENTITY == ty {
         let inner_string: PrologText = inner_term.get_ex()?;
         Ok(Entity::make_entry(&inner_string.into_inner()))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#anyURI") == ty {
+    } else if *ATOM_ANYURI == ty {
         let inner_string: PrologText = inner_term.get_ex()?;
         Ok(AnyURI::make_entry(&inner_string.into_inner()))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#anySimpleType") == ty {
+    } else if *ATOM_ANYSIMPLETYPE == ty {
         let inner_string: String = context.string_from_term(inner_term)?;
         Ok(AnySimpleType::make_entry(&inner_string))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#unsignedByte") == ty {
+    } else if *ATOM_UNSIGNEDBYTE == ty {
         let inner_number: u64 = inner_term.get_ex()?;
         Ok(u8::make_entry(&(inner_number as u8)))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#byte") == ty {
+    } else if *ATOM_BYTE == ty {
         let inner_number: i64 = inner_term.get_ex()?;
         Ok(i8::make_entry(&(inner_number as i8)))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#unsignedShort") == ty {
+    } else if *ATOM_UNSIGNEDSHORT == ty {
         let inner_number: u64 = inner_term.get_ex()?;
         Ok(u16::make_entry(&(inner_number as u16)))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#short") == ty {
+    } else if *ATOM_SHORT == ty {
         let inner_number: i64 = inner_term.get_ex()?;
         Ok(i16::make_entry(&(inner_number as i16)))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#unsignedInt") == ty {
+    } else if *ATOM_UNSIGNEDINT == ty {
         let inner_number: u64 = inner_term.get_ex()?;
         Ok(u32::make_entry(&(inner_number as u32)))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#int") == ty {
+    } else if *ATOM_INT == ty {
         let inner_number: i64 = inner_term.get_ex()?;
         Ok(i32::make_entry(&(inner_number as i32)))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#unsignedLong") == ty {
+    } else if *ATOM_UNSIGNEDLONG == ty {
         let inner_number: u64 = inner_term.get_ex()?;
         Ok(u64::make_entry(&inner_number))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#long") == ty {
+    } else if *ATOM_LONG == ty {
         let inner_number: i64 = inner_term.get_ex()?;
         Ok(i64::make_entry(&inner_number))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#float") == ty {
+    } else if *ATOM_FLOAT == ty {
         let inner_number: f64 = inner_term.get_ex()?;
         Ok(f32::make_entry(&(inner_number as f32)))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#double") == ty {
+    } else if *ATOM_DOUBLE == ty {
         let inner_number: f64 = inner_term.get_ex()?;
         Ok(f64::make_entry(&inner_number))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#decimal") == ty {
+    } else if *ATOM_DECIMAL == ty {
         let inner_number: String = context.string_from_term(inner_term)?;
         Ok(Decimal::make_entry(&Decimal::new(inner_number).unwrap()))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#integer") == ty {
+    } else if *ATOM_INTEGER == ty {
         let inner_number: String = context.string_from_term(inner_term)?;
         let integer: Integer = Integer::parse(inner_number).unwrap().into();
         Ok(Integer::make_entry(&integer))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#positiveInteger") == ty {
+    } else if *ATOM_POSINTEGER == ty {
         let inner_number: String = context.string_from_term(inner_term)?;
         let integer: Integer = Integer::parse(inner_number).unwrap().into();
         Ok(PositiveInteger::make_entry(&PositiveInteger(integer)))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#negativeInteger") == ty {
+    } else if *ATOM_NEGINTEGER == ty {
         let inner_number: String = context.string_from_term(inner_term)?;
         let integer: Integer = Integer::parse(inner_number).unwrap().into();
         Ok(NegativeInteger::make_entry(&NegativeInteger(integer)))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#nonPositiveInteger") == ty {
+    } else if *ATOM_NONPOSINTEGER == ty {
         let inner_number: String = context.string_from_term(inner_term)?;
         let integer: Integer = Integer::parse(inner_number).unwrap().into();
         Ok(NonPositiveInteger::make_entry(&NonPositiveInteger(integer)))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#nonNegativeInteger") == ty {
+    } else if *ATOM_NONNEGINTEGER == ty {
         let inner_number: String = context.string_from_term(inner_term)?;
         let integer: Integer = Integer::parse(inner_number).unwrap().into();
         Ok(NonNegativeInteger::make_entry(&NonNegativeInteger(integer)))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#gYear") == ty {
+    } else if *ATOM_GYEAR == ty {
         // TODO check that the functor is what we expect
         let year: i64 = inner_term.get_arg_ex(1)?; // TODO should this throw if the arg is not there?
         let offset: u64 = inner_term.get_arg_ex(2)?;
@@ -120,7 +168,7 @@ pub fn make_entry_from_term<C: QueryableContextType>(
             year,
             offset: offset as i16,
         }))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#gMonth") == ty {
+    } else if *ATOM_GMONTH == ty {
         // TODO check that the functor is what we expect
         let month: u64 = inner_term.get_arg_ex(1)?; // TODO should this throw if the arg is not there?
         let offset: u64 = inner_term.get_arg_ex(2)?;
@@ -128,7 +176,7 @@ pub fn make_entry_from_term<C: QueryableContextType>(
             month: month as u8,
             offset: offset as i16,
         }))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#gDay") == ty {
+    } else if *ATOM_GDAY == ty {
         // TODO check that the functor is what we expect
         let day: u64 = inner_term.get_arg_ex(1)?; // TODO should this throw if the arg is not there?
         let offset: u64 = inner_term.get_arg_ex(2)?;
@@ -136,7 +184,7 @@ pub fn make_entry_from_term<C: QueryableContextType>(
             day: day as u8,
             offset: offset as i16,
         }))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#gYearMonth") == ty {
+    } else if *ATOM_GYEARMONTH == ty {
         // TODO check that the functor is what we expect
         let year: i64 = inner_term.get_arg_ex(1)?; // TODO should this throw if the arg is not there?
         let month: u64 = inner_term.get_arg_ex(2)?;
@@ -146,7 +194,7 @@ pub fn make_entry_from_term<C: QueryableContextType>(
             month: month as u8,
             offset: offset as i16,
         }))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#gMonthDay") == ty {
+    } else if *ATOM_GMONTHDAY == ty {
         // TODO check that the functor is what we expect
         let month: u64 = inner_term.get_arg_ex(1)?; // TODO should this throw if the arg is not there?
         let day: u64 = inner_term.get_arg_ex(2)?;
@@ -156,7 +204,7 @@ pub fn make_entry_from_term<C: QueryableContextType>(
             day: day as u8,
             offset: offset as i16,
         }))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#duration") == ty {
+    } else if *ATOM_DURATION == ty {
         let sign: i64 = inner_term.get_arg_ex(1)?;
         let year: i64 = inner_term.get_arg_ex(2)?;
         let month: i64 = inner_term.get_arg_ex(3)?;
@@ -173,7 +221,7 @@ pub fn make_entry_from_term<C: QueryableContextType>(
             minute: minute as u8,
             second,
         }))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#yearMonthDuration") == ty {
+    } else if *ATOM_YEARMONTHDURATION == ty {
         let sign: i64 = inner_term.get_arg_ex(1)?;
         let year: i64 = inner_term.get_arg_ex(2)?;
         let month: i64 = inner_term.get_arg_ex(3)?;
@@ -192,7 +240,7 @@ pub fn make_entry_from_term<C: QueryableContextType>(
                 second,
             },
         )))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#dayTimeDuration") == ty {
+    } else if *ATOM_DAYTIMEDURATION == ty {
         let sign: i64 = inner_term.get_arg_ex(1)?;
         let year: i64 = inner_term.get_arg_ex(2)?;
         let month: i64 = inner_term.get_arg_ex(3)?;
@@ -209,7 +257,7 @@ pub fn make_entry_from_term<C: QueryableContextType>(
             minute: minute as u8,
             second,
         })))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#dateTime") == ty {
+    } else if *ATOM_DATETIME == ty {
         let year: i64 = inner_term.get_arg_ex(1)?;
         let month: i64 = inner_term.get_arg_ex(2)?;
         let day: i64 = inner_term.get_arg_ex(3)?;
@@ -222,7 +270,7 @@ pub fn make_entry_from_term<C: QueryableContextType>(
             .and_hms_nano_opt(hour as u32, minute as u32, second as u32, nano as u32)
             .unwrap();
         Ok(NaiveDateTime::make_entry(&dt))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#dateTimeStamp") == ty {
+    } else if *ATOM_DATETIMESTAMP == ty {
         let year: i64 = inner_term.get_arg_ex(1)?;
         let month: i64 = inner_term.get_arg_ex(2)?;
         let day: i64 = inner_term.get_arg_ex(3)?;
@@ -235,7 +283,7 @@ pub fn make_entry_from_term<C: QueryableContextType>(
             .and_hms_nano_opt(hour as u32, minute as u32, second as u32, nano as u32)
             .unwrap();
         Ok(DateTimeStamp::make_entry(&DateTimeStamp(dt)))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#date") == ty {
+    } else if *ATOM_DATE == ty {
         let year: i64 = inner_term.get_arg_ex(1)?;
         let month: i64 = inner_term.get_arg_ex(2)?;
         let day: i64 = inner_term.get_arg_ex(3)?;
@@ -247,13 +295,13 @@ pub fn make_entry_from_term<C: QueryableContextType>(
             offset: offset as i16,
         };
         Ok(Date::make_entry(&dt))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#time") == ty {
+    } else if *ATOM_TIME == ty {
         let hour: u64 = inner_term.get_arg_ex(1)?;
         let minute: u64 = inner_term.get_arg_ex(2)?;
         let second: u64 = inner_term.get_arg_ex(3)?;
         let t = NaiveTime::from_hms_opt(hour as u32, minute as u32, second as u32).unwrap();
         Ok(NaiveTime::make_entry(&t))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#base64Binary") == ty {
+    } else if *ATOM_BASE64BIN == ty {
         let base64: String = inner_term.get_ex()?;
         let mut wrapped_reader = Cursor::new(base64);
         let mut decoder = base64::read::DecoderReader::new(&mut wrapped_reader, base64::STANDARD);
@@ -261,7 +309,7 @@ pub fn make_entry_from_term<C: QueryableContextType>(
         let mut result = Vec::new();
         decoder.read_to_end(&mut result).unwrap();
         Ok(Base64Binary::make_entry(&Base64Binary(result)))
-    } else if atom!("http://www.w3.org/2001/XMLSchema#hexBinary") == ty {
+    } else if *ATOM_HEXBIN == ty {
         let hexstring: String = inner_term.get_ex()?;
         Ok(HexBinary::make_entry(&HexBinary(
             hex::decode(hexstring).unwrap(),

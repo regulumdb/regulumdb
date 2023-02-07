@@ -1865,6 +1865,7 @@ dependencies = [
  "chrono",
  "encoding_rs",
  "hex",
+ "lazy_static",
  "rug",
  "sha-1",
  "swipl",

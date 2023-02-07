@@ -13,6 +13,7 @@ swipl = {version="0.3.13", features=["serde"]}
 terminus-store = { git="https://github.com/terminusdb/terminusdb-store", rev="f916464afa496568c2d921aedf66e3eda800d3d6" }
 sha-1 = "0.9.1"
 hex = "0.4.2"
+lazy_static = "1.4.0"
 encoding_rs = "0.8.24"
 chardetng = "0.1.9"
 urlencoding = "1.1.1"
