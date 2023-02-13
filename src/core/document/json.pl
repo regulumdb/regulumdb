@@ -14324,3 +14324,55 @@ test(roundtrip_duration,
     get_dict(duration, New_Doc, Duration).
 
 :- end_tests(typed_store).
+
+:- begin_tests(nested_document_tests).
+:- use_module(core(util/test_utils)).
+
+test(nested_user_capabilities,
+     [setup(setup_temp_store(State)),
+      cleanup(teardown_temp_store(State)),
+      error(document_not_found(_,_), _)]) :-
+
+    User = json{
+               '@type':"User",
+               capability:[
+                   json{
+                       '@type':"Capability",
+                       scope:json{
+                           '@type':"Organization",
+                           name:"test1",
+                           database:[]
+                       },
+                       role:"Role/admin"
+                   }
+               ],
+               name:"auth0|614471bf74fd460069ae61bb"
+           },
+    with_test_transaction(
+        system_descriptor{},
+        C1,
+        insert_document(C1, User, Id)
+    ),
+
+    get_document(system_descriptor{}, Id, New_User),
+    Caps = (New_User.capability),
+    New_Caps = [json{
+                    '@type':"Capability",
+                    scope:json{
+                              '@type':"Organization",
+                              name:"test2",
+                              database:[]
+                          },
+                    role:"Role/admin"
+                }|Caps],
+    put_dict(_{capability: New_Caps}, New_User, Updated_User),
+
+    with_test_transaction(
+        system_descriptor{},
+        C2,
+        replace_document(C2, Updated_User),
+        _
+    ).
+
+
+:- end_tests(nested_document_tests).
