@@ -36,8 +36,8 @@
 :- use_module(library(sort)).
 :- use_module(core(util)).
 :- use_module(core(triple/casting), [typecast/4]).
-:- use_module(core(triple/base_type), [basetype_subsumption_of/2]).
-
+:- use_module(core(triple/base_type), [basetype_subsumption_of/2, base_type/1]).
+:- use_module(core(query/global_prefixes)).
 :- use_module(library(plunit)).
 /*
  * date_time_string(-Date_Time,+String) is det.
@@ -353,18 +353,46 @@ normalise_triple(rdf(X,P,Y,G),rdf(XF,P,YF)) :-
         set_normalise_warning
     ),
     normalise_triple(rdf(X,P,Y),rdf(XF,P,YF)).
-normalise_triple(rdf(X,P,Y),rdf(XF,P,YF)) :-
+normalise_triple(rdf(X,P,Y),rdf(XF,PF,YF)) :-
     (   X = node(N)
-    ->  atomic_list_concat(['_:',N], XF)
-    ;   X = XF),
+    ->  atomic_list_concat(['_:',N], X0)
+    ;   X = X0),
 
     (   Y = node(M)
-    ->  atomic_list_concat(['_:',M], YF)
+    ->  atomic_list_concat(['_:',M], YF),
+        P = PF,
+        X0 = XF
     %   Bare atom literal needs to be lifted.
-    ;   Y = literal(_)
-    ->  turtle_to_literal(Y,YF)
+    ;   lang_or_xsd(Y)
+    ->  turtle_to_literal(Y,YF),
+        P = PF,
+        X0 = XF
+    ;   Y = literal(type(Type, V))
+    ->  expanded_type_space(X0,P,V,Type,XF,PF,YF)
     %   Otherwise walk on by...
-    ;   Y = YF).
+    ;   X0 = XF,
+        Y = YF,
+        P = PF
+    ).
+
+expanded_type_space(X, P, V, Type, XF, PF, YF) :-
+    uri_encoded(segment,P,PEnc),
+    atomic_list_concat([X, '/', PEnc, '/', unit], Unit),
+    (   X = XF,
+        P = PF,
+        Unit = YF
+    ;   Unit = XF,
+        global_prefix_expand(sys:value,PF),
+        V^^'http://www.w3.org/2001/XMLSchema#decimal' = YF
+    ;   Unit = XF,
+        global_prefix_expand(rdf:type, PF),
+        Type = YF
+    ).
+
+
+lang_or_xsd(literal(type(Type, _))) :-
+    base_type(Type).
+lang_or_xsd(literal(lang(_,_))).
 
 ground_object_storage(String@Lang, lang(String,Lang)) :-
     !.
