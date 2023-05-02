@@ -8240,6 +8240,63 @@ test(enum_documentation,
                   '@type':'Enum',
                   '@value':[dog,cat]}.
 
+choice_list_schema('
+{ "@type" : "@context",
+  "@base" : "http://i/",
+  "@schema" : "http://s/" }
+
+{ "@id" : "Choice",
+  "@type" : "Class",
+  "@oneOf":  [ { "a" : { "@type" : "List", "@class" : "Document" },
+                 "b" : "xsd:integer" } ] }
+
+{ "@id" : "Document",
+  "@type" : "Class",
+  "c" : "xsd:string" }
+').
+
+
+test(add_new_choice, [
+         setup(
+             (   setup_temp_store(State),
+                 test_document_label_descriptor(Desc),
+                 write_schema(choice_list_schema,Desc)
+             )),
+         cleanup(
+             teardown_temp_store(State)
+         )
+     ]) :-
+    Document1 = json{ a : [ json{ c : "a"}, json{ c : "b"}, json{ c : "c"} ] },
+
+    with_test_transaction(
+        Desc,
+        C1,
+        (
+            insert_document(C1, Document1, Doc1)
+        )
+    ),
+
+    with_test_transaction(
+        Desc,
+        C2,
+        (
+            get_document(C2, Doc1, Document2)
+        )
+    ),
+    print_term(Document2, []),
+    get_dict(a, Document2, List),
+    put_dict(_{ a : [ json{ c : "d" }| List] },
+             Document2,
+             Document2_1
+             ),
+    with_test_transaction(
+        Desc,
+        C3,
+        (
+            replace_document(C3, Document2_1, _)
+        )
+    ).
+
 :- end_tests(json).
 
 :- begin_tests(schema_checker, [concurrent(true)]).
