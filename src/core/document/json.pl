@@ -8293,7 +8293,7 @@ test(add_new_choice, [
         Desc,
         C3,
         (
-            replace_document(C3, Document2_1, _)
+            replace_document(C3, Document2_1, true, false, _)
         )
     ).
 
