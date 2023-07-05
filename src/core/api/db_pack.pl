@@ -17,7 +17,9 @@
 :- use_module(core(triple)).
 :- use_module(core(account)).
 :- use_module(core(document), [idgen_random/2]).
+:- use_module(core(api), [api_error_jsonld/3]).
 
+:- use_module(library(http/json), [atom_json_dict/3]).
 :- use_module(library(lists)).
 :- use_module(library(uri)).
 :- use_module(library(apply)).
@@ -66,15 +68,29 @@ pack_in_background(System_DB, Auth, Path, Repo_Head_Option, Resource_ID) :-
     uri_encoded(segment, Unsafe_Random, Random),
     pack_partial_filename(Random, Part_Filename),
     pack_processed_filename(Random, Processed_Filename),
-    open(Part_Filename, write, FileStream),
+    json_log_debug_formatted('~N[Debug] Opening file ~q', [Part_Filename]),
     thread_create(
-        (    pack(System_DB, Auth, Path, Repo_Head_Option, Payload_Option),
-             (   Payload_Option = some(Payload)
-             ->  write(FileStream, Payload)
-             ;   true
-             ),
-             close(FileStream),
-             mv(Part_Filename, Processed_Filename)
+        (   catch_with_backtrace(
+                (   open(Part_Filename, write, FileStream),
+                    json_log_debug_formatted('~N[Debug] Generating pack for ~q', [Processed_Filename]),
+                    pack(System_DB, Auth, Path, Repo_Head_Option, Payload_Option),
+                    json_log_debug_formatted('~N[Debug] Pack created for db ~q', [Path]),
+                    (   Payload_Option = some(Payload)
+                    ->  write(FileStream, Payload)
+                    ;   true
+                    ),
+                    json_log_debug_formatted('~N[Debug] Closing filestream', []),
+                    close(FileStream),
+                    json_log_debug_formatted('~N[Debug] Moving to processed filename', []),
+                    mv(Part_Filename, Processed_Filename),
+                    json_log_debug_formatted('~N[Debug] Moved', [])
+                ),
+                Error,
+                (   api_error_jsonld(pack,Error,JSONLD),
+                    atom_json_dict(Atom, JSONLD, [width(0)]),
+                    json_log_error_formatted('~N[Error] ~q', [Atom])
+                )
+            )
         ), _, [detached(true)]),
     Resource_ID = Random.
 
