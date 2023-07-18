@@ -37,7 +37,7 @@ The easiest way to install TerminusDB as a developer is by using the [Snap](http
 
 For deployments, or if you want to use the local dashboard:
 
-1. Add the following to a .env file in the source directory:
+1. Add the following to a `.env` file in the source directory:
 
 ```shell
 OPENAI_KEY=YOUR_OPENAI_KEY_HERE
