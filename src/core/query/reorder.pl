@@ -261,10 +261,27 @@ sort_bound([Term|Terms], [Deep|Sorted]) :-
     dummy_bind(Terms, Vars, Bound),
     order_conjuncts(Bound, Sorted).
 
-optimize_conjuncts(Read, Ordered) :-
+optimize_conjuncts(Read, Optimized) :-
     commutative_partitions(Read, Partitions),
     maplist(order_conjuncts, Partitions, Ordered_Partitions),
-    append(Ordered_Partitions, Ordered).
+    append(Ordered_Partitions, Ordered),
+    disconnected_partitions(Ordered, Disconnected_Partitions),
+    cross_product_partitions(Disconnected_Partitions, Optimized).
+
+cross_product_partitions(Disconnected_Partitions, Crossed) :-
+    foldl([Partition1,Partition2,Result]>>(
+              (   Partition1 = []
+              ->  Result = Partition2
+              ;   Partition2 = []
+              ->  Result = Partition1
+              ;   xfy_list(',', Goal1, Partition1),
+                  xfy_list(',', Goal2, Partition2),
+                  Result = [(Goal1 * Goal2)]
+              )
+          ),
+          Disconnected_Partitions,
+          [],
+          Crossed).
 
 optimize_read_order(Read, Ordered) :-
     optimize_conjuncts(Read, Ordered_Bound),
@@ -308,8 +325,8 @@ split_disconnected([Head|Rest], [Head|Start], End) :-
     split_at(Rest,Start,End).
 
 disconnected_partitions([], []).
-disconnected_partitions(Conjunctions, [Start|Partitions]) :-
-    split_disconnected(Conjunctions, Start, Rest),
+disconnected_partitions([H|Conjunctions], [Start|Partitions]) :-
+    split_disconnected([H|Conjunctions], Start, Rest),
     disconnected_partitions(Rest, Partitions).
 
 :- begin_tests(reorder_query).
@@ -485,5 +502,13 @@ test(disconnected_partitions) :-
         [[t(v(x), y, z), t(mv(x), w, y)],
          [t(v(y), z, w)]]
     ).
+
+test(cross_product_partitions) :-
+    disconnected_partitions(
+        [t(v(x), y, z), t(mv(x), w, y), t(v(y), z, w)],
+        Result
+    ),
+    cross_product_partitions(Result, Crossed),
+    Crossed = [ t(v(y),z,w) * (t(v(x),y,z),t(mv(x),w,y)) ].
 
 :- end_tests(reorder_query).

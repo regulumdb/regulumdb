@@ -1087,6 +1087,12 @@ compile_wf((A,B),(ProgA,ProgB)) -->
     {
         debug(terminus(woql_compile(compile_wf)), 'Conjunctive Program: ~q',[(ProgA,ProgB)])
     }.
+compile_wf((A*B),cross(ProgA,ProgB)) -->
+    compile_wf(A,ProgA),
+    compile_wf(B,ProgB),
+    {
+        debug(terminus(woql_compile(compile_wf)), 'Conjunctive Cross Product Program: ~q',[cross(ProgA,ProgB)])
+    }.
 compile_wf(when(A,B),((ProgA, ProgB) ; true)) --> % forall(ProgA, ProgB)
     compile_wf(A,ProgA),
     compile_wf(B,ProgB).
@@ -1490,6 +1496,14 @@ debug_wf(Lit) -->
 debug_wf(Fmt, Args) -->
     { debug(terminus(woql_compile(compile_wf)), Fmt, Args) },
     [].
+
+:- table cross_storage as private.
+cross_storage(Goal) :-
+    call(Goal).
+
+cross(A,B) :-
+    cross_storage(A),
+    call(B).
 
 %%
 % update_descriptor_transaction(Descriptor, Context1, Context2) is det.
@@ -5102,6 +5116,37 @@ test(uri_casting, [
 
     URIs = ['http://somewhere.for.now/document/Capability/server_access',
             'http://somewhere.for.now/document/Role/admin'].
+
+test(cross_product, [
+         setup((setup_temp_store(State),
+                create_db_without_schema("admin", "test"))),
+         cleanup(teardown_temp_store(State))
+     ]) :-
+    Commit_Info = commit_info{ author : "automated test framework",
+                               message : "testing"},
+
+    AST = (insert(a,first,alpha),
+           insert(a,rest,c),
+           insert(c,first,beta),
+           insert(c,rest,d),
+           insert(d,first,delta),
+           insert(d,rest,nil)
+          ),
+
+    resolve_absolute_string_descriptor("admin/test", Descriptor),
+    create_context(Descriptor,Commit_Info, Context),
+
+    run_context_ast_jsonld_response(Context, AST, no_data_version, _, _),
+
+    findall(
+        X-Y,
+        ask(Descriptor,
+            (   t(a, _P, X),
+                t(c, _Q, Y)
+            )),
+        [alpha-beta,c-beta,alpha-d,c-d]
+    ).
+
 
 :- end_tests(woql).
 
