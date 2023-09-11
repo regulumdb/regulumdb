@@ -42,8 +42,8 @@ shape(person,
             "family_name":string,
             "date_of_birth":optional(dateTime),
             "friend":set(user) },
+      patterns{ "foo_bar.*" : string},
       open(value))
-
 
 optional(Type) ≡ set(Type,0,1)
 set(Type) = set(Type,0,inf)
@@ -79,7 +79,7 @@ keys(Document,Keys) :-
 keys(shape(_,KeyTypes), Keys) :-
     dict_keys(Key_Types, Keys).
 
-document_shape_witness(Document, Shape, Witness) :-
+document_shape_Schema_witness(Document, Shape, Schema, Witness) :-
     keys(Document, Document_Keys),
     keys(Shape, Shape_Keys),
     butterfly(Document_Keys, Shape_Keys, Left, Shared, Right),
@@ -99,29 +99,44 @@ document_shape_witness(Document, Shape, Witness) :-
                       document: Document,
                       field: Required
                   }
-    ;   keys_shape_document_witness(Shared, Shape, Document, Witness)
+    ;   keys_shape_document_witness(Shared, Shape, Schema, Document, Witness)
     ).
 
-keys_shape_document_witness([Key|Keys], Shape, Document, Witness) :-
-    (   key_shape_document_witness(Key,Shape,Document,Witness)
+keys_shape_schema_document_witness([Key|Keys], Shape, Schema, Document, Witness) :-
+    (   key_shape_document_witness(Key,Shape,Schema,Document,Witness)
     ->  true
-    ;   keys_shape_document_witness(Keys,Shape,Document,Witness)
+    ;   keys_shape_document_witness(Keys,Shape,Schema,Document,Witness)
     ).
 
-key_shape_document_witness(Key, Shape, Document, Witness) :-
+key_shape_document_witness(Key, Shape, Schema, Document, Witness) :-
     document_property_value(Document, Key, Value),
     shape_property_type(Shape, Key, Type),
-    value_type_witness(Value, Type, Witness).
+    value_type_witness(Value, Type, Schema, Witness).
 
 document_property_value(Document, Key, Value) :-
     is_dict(Document),
     !,
     get_dict(Key, Document, Value).
 
-% This may need to deal with inheritance.
+% Let's assume shapes have flattened inheritance already
 shape_property_type(shape(_,KeyTypes, _), Key, Type) :-
     get_dict(Key, KeyTypes, Type).
 
+value_type_witness(Value, Type, Schema, Witness),
+object_type(Type) =>
+    schema_shape(Type, Shape),
+    document_shape_schema_witness(Value, Shape, Schema, Witness).
+value_type_witness(Value, Type, Witness) =>
+    storage_type(Type, Storage_Type),
+    catch(
+        \+ json_value_cast_type(Value, Type, _),
+        error(casting_error(Val, Type), _),
+        Witness = json{
+                      '@type' : could_not_interpret_as_type,
+                      value : Value,
+                      type : Type
+                  }
+    ).
 
 /*
 
