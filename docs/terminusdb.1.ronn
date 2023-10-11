@@ -758,6 +758,9 @@ Query documents.
   * `-c`, `--count`=[value]:
   number of documents to return
 
+  * `-j`, `--jsonld`=[value]:
+  print as jsonld
+
   * `-m`, `--minimized`=[value]:
   return minimized prefixes
 
