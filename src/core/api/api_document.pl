@@ -113,6 +113,19 @@ api_document_exists(instance, Transaction, Id) :-
 
 api_print_document(Graph_Type, Transaction, Id, Config) :-
     api_print_document(Graph_Type, Transaction, Id, Config, started(true)).
+
+api_print_document(instance, Transaction, Id, Config, Stream_Started) :-
+    (Config.jsonld) = true,
+    !,
+    get_document(Transaction, Id, Document, Config),
+    json_elaborate(Transaction, Document, Elaborated),
+    (   (Config.compress) = true
+    ->  Prefixes = (Transaction.prefixes),
+        print_term(Prefixes, []),
+        compress(Elaborated, Prefixes, Document2)
+    ;   Document2 = Elaborated
+    ),
+    json_stream_write_dict(Config, Stream_Started, Document2).
 api_print_document(instance, Transaction, Id, Config, Stream_Started) :-
     '$doc':get_document_context(Transaction, (Config.compress), (Config.unfold), (Config.minimized), Context),
     Stream_Started = started(Started),
@@ -120,12 +133,25 @@ api_print_document(instance, Transaction, Id, Config, Stream_Started) :-
     prefix_expand(Id, Prefixes, Id_Ex),
     do_or_die('$doc':print_document_json(current_output, Context, Id_Ex, Config.as_list, Started),
               error(document_not_found(Id), _)),
-   nb_setarg(1, Stream_Started, true).
+    nb_setarg(1, Stream_Started, true).
 api_print_document(schema, Transaction, Id, Config, Stream_Started) :-
     do_or_die(get_schema_document(Transaction, Id, Document),
               error(document_not_found(Id), _)),
     json_stream_write_dict(Config, Stream_Started, Document).
 
+api_print_documents(instance, Transaction, Config, Stream_Started) :-
+    (Config.jsonld) = true,
+    !,
+    forall(
+        get_document(Transaction, _, Document, Config),
+        (   json_elaborate(Transaction, Document, Elaborated),
+            (   (Config.compress) = true
+            ->  database_and_default_prefixes(Transaction, Prefixes),
+                compress(Elaborated, Prefixes, Document2)
+            ;   writeq(foo), Document2 = Elaborated
+            ),
+            json_stream_write_dict(Config, Stream_Started, Document2))
+    ).
 api_print_documents(schema, Transaction, Config, Stream_Started) :-
     forall(api_get_documents(Transaction, schema, Config, Document),
            json_stream_write_dict(Config, Stream_Started, Document)).

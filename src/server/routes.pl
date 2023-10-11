@@ -481,6 +481,7 @@ document_handler(get, Path, Request, System_DB, Auth) :-
             % See https://github.com/terminusdb/terminusdb/issues/802
             param_value_search_or_json_optional(Search, JSON, prefixed, boolean, true, Prefixed),
             param_value_search_or_json_optional(Search, JSON, compress_ids, boolean, Prefixed, Compress_Ids),
+            param_value_search_or_json_optional(Search, JSON, jsonld, boolean, false, JSONLD),
 
             param_value_json_optional(JSON, query, object, _, Query),
 
@@ -500,7 +501,8 @@ document_handler(get, Path, Request, System_DB, Auth) :-
                          as_list: As_List,
                          compress: Compress_Ids,
                          unfold: Unfold,
-                         minimized: Minimized
+                         minimized: Minimized,
+                         jsonld: JSONLD
                      },
 
             api_read_document_selector(

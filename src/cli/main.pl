@@ -1065,6 +1065,12 @@ opt_spec(doc,get,'terminusdb doc get DATABASE_SPEC OPTIONS',
            shortflags([c]),
            default(unlimited),
            help('number of documents to return')],
+          [opt(jsonld),
+           type(boolean),
+           longflags([jsonld]),
+           shortflags([j]),
+           default(false),
+           help('print as jsonld')],
           [opt(minimized),
            type(boolean),
            longflags([minimized]),
@@ -2186,6 +2192,7 @@ run_command(doc,get, [Path], Opts) :-
     option(ids(Ids_Param), Opts),
     option(type(Type), Opts),
     option(compress_ids(Compress_Ids), Opts),
+    option(jsonld(JSONLD), Opts),
     option(query(Query_Atom), Opts),
 
     (   ground(Id)
@@ -2209,9 +2216,12 @@ run_command(doc,get, [Path], Opts) :-
                  as_list: As_List,
                  compress: Compress_Ids,
                  unfold: Unfold,
-                 minimized: Minimized
+                 minimized: Minimized,
+                 jsonld: JSONLD
              },
-
+    %trace(api_document:api_print_document),
+    %trace(api_document:api_print_documents),
+    %trace(api_document:api_print_documents_by_type),
     api_report_errors(
         get_documents,
         api_read_document_selector(
