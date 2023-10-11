@@ -414,6 +414,17 @@ test(compress_base, [])
 
     json{'@type':'scm:Fact','scm:your_face':json{'@id':'is_ugly'}} :< Compressed.
 
+test(compress_schema, [])
+:-
+    Context = json{ '@base' : "http://example.com/document/",
+                    '@schema' : "http://example.com/schema#"},
+    Document = json{ '@type' : "http://example.com/schema#Fact",
+                     'http://example.com/schema#your_face' :
+                     json{ '@id' : "http://example.com/document/is_ugly" }},
+    compress(Document, Context, Compressed),
+
+    json{'@type':'Fact','your_face':json{'@id':'is_ugly'}} :< Compressed.
+
 :- end_tests(jsonld_compress).
 
 /*
