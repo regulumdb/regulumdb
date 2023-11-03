@@ -3,7 +3,7 @@ mod log;
 
 #[macro_use]
 mod dict_lookup;
-
+mod capabilities;
 mod changes;
 mod consts;
 mod doc;
