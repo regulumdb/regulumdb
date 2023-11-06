@@ -1727,6 +1727,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_variant"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "47a8ec0b2fd0506290348d9699c0e3eb2e3e8c0498b5a9a6158b3bd4d6970076"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "sha-1"
 version = "0.9.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1977,6 +1986,7 @@ dependencies = [
  "rug",
  "serde",
  "serde_json",
+ "serde_variant",
  "swipl",
  "terminusdb-store-prolog",
  "thiserror",

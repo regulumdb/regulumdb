@@ -119,4 +119,5 @@ pub fn install() {
     template::register();
     changes::register();
     embedding::register();
+    capabilities::register();
 }
