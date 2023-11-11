@@ -408,6 +408,14 @@ json_type_to_woql_ast('DeleteDocument',JSON,WOQL,Path) :-
      } :< JSON,
     json_value_to_woql_ast(Doc_ID, WDoc_ID, [identifier|Path]),
     WOQL = delete_document(WDoc_ID).
+json_type_to_woql_ast('Patch',JSON,WOQL,Path) :-
+    _{patch: Patch } :< JSON,
+    json_value_to_woql_ast('Value',Patch,WPatch,[patch|Path]),
+    (   _{options: Options } :< JSON
+    ->  json_value_to_woql_ast('Value',Options,WOptions,[patch|Path])
+    ;   WOptions = _{}
+    ),
+    WOQL = patch(WPatch,WOptions).
 json_type_to_woql_ast('ReadObject',JSON,WOQL,Path) :-
     _{identifier : Doc_ID,
       document : Doc

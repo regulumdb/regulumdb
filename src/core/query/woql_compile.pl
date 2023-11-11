@@ -280,6 +280,9 @@ resolve_dictionary_(Dict, Dict_Resolved, C1, C2) :-
              get_dict(Key,Dict,V),
              (   Key = '@type'
              ->  resolve_predicate(V,Value,CA,CB)
+             ;   Key = '@op'
+             ->  V = Value,
+                 CA = CB
              ;   resolve_dictionary_(V,Value,CA,CB)
              )
          ), Keys, Pairs, C1, C2),
@@ -398,6 +401,269 @@ var_record_pl_var(Var_Name,
 
 var_compare(Op, Left, Right) :-
     compare(Op, Left.var_name, Right.var_name).
+
+/* This partitions a tree cleanly into two segments or fails:
+   Reads:  read only
+   Writes: write only
+*/
+partition((A,B), Reads, Writes) :-
+    partition(A, A_Reads, []),
+    !,
+    partition(B, B_Reads, Writes),
+    append(A_Reads, B_Reads, Reads).
+partition((A,B), Reads, Writes) :-
+    partition(B, [], B_Writes),
+    !,
+    partition(A, Reads, A_Writes),
+    append(A_Writes, B_Writes, Writes).
+partition((A;B), [(A;B)], []) :-
+    /* just fail if we are doing disjunctive writes */
+    !,
+    partition(A, _, []),
+    partition(B, _, []).
+partition(not(Q), [not(Q)], []) :-
+    /* just fail if we have a write in a not. */
+    !,
+    partition(Q, _, []).
+partition(once(Q), [once(Q)], []) :-
+    !,
+    partition(Q, _, []).
+partition(once(Q), [], [once(Q)]) :-
+    partition(Q, [], _),
+    !.
+partition(limit(N,Q), [limit(N,Q)], []) :-
+    /* just fail if we have a limit on a write */
+    !,
+    partition(Q, _, []).
+partition(select(V,Q), [select(V,Q)], []) :-
+    /* just fail if we have a select on a write */
+    !,
+    partition(Q, _, []).
+partition(opt(P), [opt(P)], []) :-
+    /* just fail if we have an opt on a write */
+    !,
+    partition(P, _, []).
+partition(when(A,B), Reads, Writes) :-
+    /* assume "when"s have a read only head */
+    !,
+    partition(A, A_Reads, []),
+    partition(B, B_Reads, Writes),
+    append(A_Reads, B_Reads, Reads).
+partition(using(C,P), Reads, Writes) :-
+    !,
+    partition(P, P_Reads, P_Writes),
+    (   P_Reads = []
+    ->  Reads = [],
+        xfy_list(',', Q, P_Writes),
+        Writes = [using(C,Q)]
+    ;   P_Writes = []
+    ->  Writes = [],
+        xfy_list(',', Q, P_Reads),
+        Reads = [using(C,Q)]
+    ->  xfy_list(',', A, P_Reads),
+        xfy_list(',', B, P_Writes),
+        Reads = [using(C,A)],
+        Writes = [using(C,B)]
+    ).
+partition(from(C,P), Reads, Writes) :-
+    partition(P, P_Reads, P_Writes),
+    !,
+    (   P_Reads = []
+    ->  Reads = [],
+        xfy_list(',', Q, P_Writes),
+        Writes = [from(C,Q)]
+    ;   P_Writes = []
+    ->  Writes = [],
+        xfy_list(',', Q, P_Reads),
+        Reads = [from(C,Q)]
+    ->  xfy_list(',', A, P_Reads),
+        xfy_list(',', B, P_Writes),
+        Reads = [from(C,A)],
+        Writes = [from(C,B)]
+    ).
+partition(start(N,P), [start(N,P)], []) :-
+    partition(P, _, []),
+    !.
+partition(count(P,N), [count(P,N)], []) :-
+    partition(P, _, []),
+    !.
+partition(where(P), Reads, Writes) :-
+    % where means nothing
+    partition(P, Reads, Writes),
+    !.
+partition(order_by(L,S), [order_by(L,S)], []) :-
+    partition(S, _, []),
+    !.
+partition(into(C,P), Reads, Writes) :-
+    partition(P, P_Reads, P_Writes),
+    !,
+    (   P_Reads = []
+    ->  Reads = [],
+        xfy_list(',', Q, P_Writes),
+        Writes = [into(C,Q)]
+    ;   P_Writes = []
+    ->  Writes = [],
+        xfy_list(',', Q, P_Reads),
+        Reads = [into(C,Q)]
+    ->  xfy_list(',', A, P_Reads),
+        xfy_list(',', B, P_Writes),
+        Reads = [into(C,A)],
+        Writes = [into(C,B)]
+    ).
+partition(group_by(G,T,Q,A), [group_by(G,T,Q,A)], []) :-
+    partition(Q, _, []),
+    !.
+partition(insert(A,B,C), Reads, Writes) :-
+    !,
+    Reads = [],
+    Writes = [insert(A,B,C)].
+partition(insert(A,B,C,D), Reads, Writes) :-
+    !,
+    Reads = [],
+    Writes = [insert(A,B,C,D)].
+partition(patch(A,B,C), Reads, Writes) :-
+    !,
+    Reads = [],
+    Writes = [patch(A,B,C)].
+partition(patch(A,B,C,D), Reads, Writes) :-
+    !,
+    Reads = [],
+    Writes = [patch(A,B,C,D)].
+partition(delete(A,B,C), Reads, Writes) :-
+    !,
+    Reads = [],
+    Writes = [delete(A,B,C)].
+partition(delete(A,B,C,D), Reads, Writes) :-
+    !,
+    Reads = [],
+    Writes = [delete(A,B,C,D)].
+partition(replace_document(A,B), Reads, Writes) :-
+    !,
+    Reads = [],
+    Writes = [replace_document(A,B)].
+partition(replace_document(A,B,C), Reads, Writes) :-
+    !,
+    Reads = [],
+    Writes = [replace_document(A,B,C)].
+partition(delete_document(A), Reads, Writes) :-
+    !,
+    Reads = [],
+    Writes = [delete_document(A)].
+partition(T,[T],[]) :-
+    /* Everything else should be read only
+     * Note: A bit more energy here would remove the default case and need for cuts.
+     */
+    !.
+
+/*
+ * safe_guard_removal(Term, NewTerm) is det.
+ */
+safe_guard_removal(Term, Prog) :-
+    partition(Term,Reads,Writes),
+    (   Writes = []
+    ->  xfy_list(',', Prog, Reads)
+    ;   Reads = []
+    ->  xfy_list(',', Write_Term, Writes),
+        Prog = immediately(Write_Term)
+    ;   xfy_list(',', A, Reads),
+        xfy_list(',', B, Writes),
+        Prog = (A,immediately(B))
+    ),
+    !.
+safe_guard_removal(Term, Term).
+
+:- begin_tests(guards).
+
+test(guard_removal_is_impossible, []) :-
+
+    AST = (
+        t(a,b,c),
+        insert(a,b,c)
+    ;   t(e,f,g),
+        insert(d,b,c)),
+
+    safe_guard_removal(AST, AST).
+
+test(guard_removal_is_safe, []) :-
+
+    AST = (
+        t(a,b,c),
+        t(e,f,g),
+        insert(a,b,c),
+        insert(d,b,c),
+        insert(e,f,g)
+    ),
+
+    safe_guard_removal(AST, AST2),
+
+    AST2 = ((
+                   t(a,b,c),
+                   t(e,f,g)),
+            immediately(
+                (
+                    insert(a,b,c),
+                    insert(d,b,c),
+                    insert(e,f,g)))).
+
+test(alternating_inserts, []) :-
+
+    AST = (
+        t(a,b,c),
+        insert(a,b,c),
+        t(e,f,g),
+        insert(d,b,c),
+        insert(e,f,g)
+    ),
+
+    safe_guard_removal(AST, AST).
+
+test(guard_removal_with_deep_inserts, []) :-
+
+    AST = (
+        t(a,b,c),
+        (   t(e,f,g),
+            (   insert(a,b,c),
+                insert(d,b,c),
+                (   insert(e,f,g),
+                    insert(f,g,h))))),
+
+    safe_guard_removal(AST, AST2),
+
+    AST2 = ((t(a,b,c),
+             t(e,f,g)),
+            immediately(
+                (insert(a,b,c),
+                 insert(d,b,c),
+                 insert(e,f,g),
+                 insert(f,g,h)))).
+
+test(guard_single_query, []) :-
+
+    AST = t(a,b,c),
+
+    safe_guard_removal(AST, (t(a,b,c))).
+
+
+test(guard_single_insertion, []) :-
+
+    AST = insert(a,b,c),
+
+    safe_guard_removal(AST, immediately(insert(a,b,c))).
+
+test(guard_single_deletion, []) :-
+
+    AST = delete(a,b,c),
+
+    safe_guard_removal(AST, immediately(delete(a,b,c))).
+
+test(guard_double_insertion, []) :-
+
+    AST = (insert(a,b,c),insert(d,e,f)),
+
+    safe_guard_removal(AST, (immediately((insert(a,b,c),insert(d,e,f))))).
+
+:- end_tests(guards).
+
 
 /*
  * compile_query(+Term:any,-Prog:any,-Ctx_Out:context) is det.
@@ -894,6 +1160,24 @@ compile_wf(delete_document(X),(
                freeze(Guard,
                       delete_document(S0, URI)))) -->
     resolve(X,URI),
+    view(update_guard, Guard),
+    peek(S0).
+compile_wf(delete_document(X),(
+               freeze(Guard,
+                      delete_document(S0, URI)))) -->
+    resolve(X,URI),
+    view(update_guard, Guard),
+    peek(S0).
+compile_wf(patch(Diff),Goal) -->
+    compile_wf(patch(Diff,[]),Goal).
+compile_wf(patch(Diff,Opts),(
+               freeze(Guard,
+                      (   apply_diff(S0, DiffE, Witness, Opts),
+                          (   Witness = null
+                          ->  true
+                          ;   throw(error(patch_witness(Witness))))
+                      )))) -->
+    resolve(Diff,DiffE),
     view(update_guard, Guard),
     peek(S0).
 % TODO: Need to translate the reference WG to a read-write object.
@@ -5131,6 +5415,40 @@ test(bad_variable_name, [
     AST = (v(v('X')) = a),
     run_context_ast_jsonld_response(Context, AST, no_data_version, _, _JSON).
 
+test(patch_name, [
+         setup((setup_temp_store(State),
+                create_db_with_test_schema("admin", "schema_db"))),
+         cleanup(teardown_temp_store(State))
+     ]) :-
+
+    Commit_Info = commit_info{ author : "automated test framework",
+                               message : "testing"},
+
+    Document = _{ '@type' : 'City',
+                  'name' : 'Londonderry'},
+    resolve_absolute_string_descriptor("admin/schema_db", Descriptor),
+    create_context(Descriptor,Commit_Info, Context),
+    with_transaction(
+        Context,
+        insert_document(Context, Document, Id),
+        _
+    ),
+    create_context(Descriptor,Commit_Info, Context2),
+    Patch_AST = patch(_{'@id' : Id, name : json{ '@op' : 'ForceValue',
+                                                 '@after' : "Derry"}}, []),
+    run_context_ast_jsonld_response(Context2, Patch_AST, no_data_version, _, _),
+    create_context(Descriptor,Commit_Info, Context3),
+    Read_AST = get_document(Id,v('Doc')),
+    run_context_ast_jsonld_response(Context3, Read_AST, no_data_version, _, Response),
+
+    _{'@type':'api:WoqlResponse','api:status':'api:success','api:variable_names':['Doc'],
+      bindings:[Bindings],deletes:0,inserts:0,transaction_retry_count:0} :< Response,
+
+    get_dict('Doc', Bindings, New_Doc),
+
+    _{'@id':_,
+      '@type':'City',
+      name:"Derry"} :< New_Doc.
 
 test(doc_insert_split, [
          setup((setup_temp_store(State),
