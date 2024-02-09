@@ -173,9 +173,6 @@ refute_cardinality_(not_tagged_union(C,_),Validation_Object,S,P,Witness) :-
                        class: C,
                        predicate: Predicate
                      }.
-refute_cardinality_(set(_C),_Validation_Object,_S,_P,_Witness) :-
-    % no bad cardinality possible
-    fail.
 refute_cardinality_(array(_C,_D),_Validation_Object,_S,_P,_Witness) :-
     % a property whose value is an array
     % No bad cardinality possible - absence means empty array
@@ -248,6 +245,26 @@ refute_cardinality_(optional(C),Validation_Object,S,P,Witness) :-
                          }
     ).
 refute_cardinality_(cardinality(C,N,M),Validation_Object,S,P,Witness) :-
+    card_count(Validation_Object,S,P,Count),
+    \+ (   N =< Count,
+           Count =< M
+       ),
+    instance_layer(Validation_Object, Layer),
+    terminus_store:subject_id(Layer, Subject, S),
+    (   atom(P)
+    ->  P = Predicate
+    ;   terminus_store:predicate_id(Layer, Predicate_String, P),
+        atom_string(Predicate, Predicate_String)
+    ),
+    range_term_list(Validation_Object,Subject,Predicate,L),
+    Witness = witness{ '@type': instance_has_wrong_cardinality,
+                       class: C,
+                       instance: Subject,
+                       object_list: L,
+                       predicate: Predicate,
+                       cardinality: Count
+                     }.
+refute_cardinality_(set(C,N,M),Validation_Object,S,P,Witness) :-
     card_count(Validation_Object,S,P,Count),
     \+ (   N =< Count,
            Count =< M

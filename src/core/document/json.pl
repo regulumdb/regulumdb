@@ -954,6 +954,22 @@ is_type_family(Dict) :-
     maybe_expand_schema_type(Type_Constructor,Expanded),
     type_family_constructor(Expanded).
 
+type_family_parts(JSON,['Set',Class,Min_Cardinality,Max_Cardinality]) :-
+    get_dict('@type',JSON,"Set"),
+    !,
+    get_dict('@class',JSON, Class),
+    (   get_dict('@cardinality',JSON, Cardinality)
+    ->  Min_Cardinality = Cardinality,
+        Max_Cardinality = Cardinality
+    ;   (   get_dict('@min_cardinality',JSON, Min_Cardinality)
+        ->  true
+        ;   Min_Cardinality = 0
+        ),
+        (   get_dict('@max_cardinality',JSON, Max_Cardinality)
+        ->  true
+        ;   Max_Cardinality = inf
+        )
+    ).
 type_family_parts(JSON,['Cardinality',Class,Min_Cardinality,Max_Cardinality]) :-
     get_dict('@type',JSON,"Cardinality"),
     !,
@@ -2283,8 +2299,11 @@ type_descriptor_json(optional(C), Prefixes, json{ '@type' : Optional,
                                                   '@class' : Class_Comp }, Options) :-
     expand_system_uri(sys:'Optional', Optional, Options),
     compress_schema_uri(C, Prefixes, Class_Comp, Options).
-type_descriptor_json(set(C), Prefixes, json{ '@type' : Set,
-                                             '@class' : Class_Comp }, Options) :-
+type_descriptor_json(set(C,Min,Max), Prefixes, json{ '@type' : Set,
+                                                     '@class' : Class_Comp,
+                                                     '@min_cardinality' : Min,
+                                                     '@max_cardinality' : Max
+                                                   }, Options) :-
     expand_system_uri(sys:'Set', Set, Options),
     compress_schema_uri(C, Prefixes, Class_Comp, Options).
 type_descriptor_json(array(C,D), Prefixes, json{ '@type' : Array,
@@ -4596,6 +4615,15 @@ test(type_family_id, []) :-
                    _{},
                    [property(friend_of), type('Person')],
                    'Person/friend_of/Cardinality+Person+3+3').
+
+test(type_family_id_for_set, []) :-
+
+    type_family_id(json{'@type':"Set",
+                        '@cardinality':3,
+                        '@class':'Person'},
+                   _{},
+                   [property(friend_of), type('Person')],
+                   'Person/friend_of/Set+Person+3+3').
 
 test(schema_elaborate, []) :-
 

@@ -900,14 +900,6 @@ refute_type(Validation_Object,Type,Witness) :-
                   class_error : (Class_Witness.'@type')
                  })).
 refute_type(Validation_Object,Type,Witness) :-
-    database_schema(Validation_Object, Schema),
-    xrdf(Schema, Type, rdf:type, sys:'Set'),
-    (   xrdf(Schema, Type, sys:class, Class)
-    ->  refute_class_or_base_type(Validation_Object, Class, Witness)
-    ;   Witness = json{ '@type' : set_has_no_class,
-                        type : Type }
-    ).
-refute_type(Validation_Object,Type,Witness) :-
     database_schema(Validation_Object,Schema),
     xrdf(Schema, Type, rdf:type, sys:'List'),
     (   xrdf(Schema, Type, sys:class, Class)
@@ -951,6 +943,18 @@ refute_type(Validation_Object,Type,Witness) :-
     ->  Witness = json{ '@type' : cardinality_has_no_bound,
                         type : Type }
     ).
+refute_type(Validation_Object,Type,Witness) :-
+    database_schema(Validation_Object, Schema),
+    xrdf(Schema, Type, rdf:type, sys:'Set'),
+    (   xrdf(Schema, Type, sys:class, Class)
+    ->  refute_class_or_base_type(Validation_Object, Class, Witness)
+    ;   Witness = json{ '@type' : set_has_no_class,
+                        type : Type }
+    ;   \+ xrdf(Schema, Type, sys:min_cardinality, _),
+        \+ xrdf(Schema, Type, sys:max_cardinality, _)
+    ->  Witness = json{ '@type' : set_cardinality_has_no_bound,
+                        type : Type }
+    ).
 
 type_descriptor(Validation_Object, Class, Descriptor) :-
     database_schema(Validation_Object, Schema),
@@ -979,7 +983,15 @@ schema_type_descriptor(Schema, Class, class(Class)) :-
 schema_type_descriptor(Schema, Type, set(Class)) :-
     xrdf(Schema, Type, rdf:type, sys:'Set'),
     !,
-    xrdf(Schema, Type, sys:class, Class).
+    xrdf(Schema, Type, sys:class, Class),
+    (   xrdf(Schema, Type, sys:min_cardinality, N^^xsd:nonNegativeInteger)
+    ->  true
+    ;   N = 0
+    ),
+    (   xrdf(Schema, Type, sys:max_cardinality, M^^xsd:nonNegativeInteger)
+    ->  true
+    ;   M = inf
+    ).
 schema_type_descriptor(Schema, Type, list(Class)) :-
     xrdf(Schema, Type, rdf:type, sys:'List'),
     !,
