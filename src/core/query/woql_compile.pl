@@ -5567,3 +5567,80 @@ test(preflight_permissions, [
     once(ask(Context, using('z/test/local/_commits', t(_, _, _)))).
 
 :- end_tests(preflight).
+
+:- begin_tests(predicates).
+
+test(times_mode, [
+         setup((setup_temp_store(State),
+                create_db_with_test_schema("admin", "test"),
+                create_db_with_test_schema("admin", "queries"))),
+         cleanup(teardown_temp_store(State))
+     ]) :-
+
+    Person = _{ '@type' : "Class",
+                '@id' : "Person",
+                '@key' : _{ '@type' : "Lexical", '@fields' : [ "name" ] },
+                parent : _{ '@type' : 'Optional',
+                            '@class' : 'Person'},
+                name : "xsd:string"},
+
+    Commit_Info = commit_info{author: "a", message: "m"},
+    resolve_absolute_string_descriptor("admin/test", Descriptor),
+    create_context(Descriptor, Commit_Info, C1),
+    with_transaction(
+        C1,
+        insert_schema_document(C1,Person),
+        _
+    ),
+
+    create_context(Descriptor, Commit_Info, C2),
+    with_transaction(
+        C2,
+        (
+            insert_document(C2, _{ '@type' : "Person", name : "a", edge : ["Node/b"]}, Ua),
+            insert_document(C2, _{ '@type' : "Person", name : "b", edge : ["Node/c"]}, Ua),
+            insert_document(C2, _{ '@type' : "Person", name : "c", edge : []}, Ua)
+        ),
+        _
+    ),
+
+    Query = _{ '@type' : "NamedParametricQuery",
+               name : "ancestor",
+               parameters : ["Younger", "Older"],
+               query: _{ '@type' : "Or",
+                         or : [
+                             _{'@type':"Triple",
+                               subject:
+                               _{'@type':"NodeValue",variable:"Younger"},
+                               predicate:
+                               _{'@type':"NodeValue",node:"parent"},
+                               object:
+                               _{'@type':"Value",variable:"Older"},
+                               graph:"schema"},
+                             _{'@type' : "And",
+                               and : [_{'@type':"Triple",
+                                        subject:
+                                        _{'@type':"NodeValue",variable:"Younger"},
+                                        predicate:
+                                        _{'@type':"NodeValue",node:"parent"},
+                                        object:
+                                        _{'@type':"Value",variable:"Intermediate"},
+                                        graph:"schema"},
+                                      _{'@type':"Call",
+                                        call: "ancestor",
+                                        arguments: ["Intermediate", "Older"]
+                                       }
+                                     ]
+                              }
+                         ]}
+             },
+
+    resolve_absolute_string_descriptor("admin/queries", QueryDescriptor),
+    create_context(QueryDescriptor, Commit_Info, C3),
+    with_transaction(
+        C3,
+        insert_document(C3, Query, QueryId),
+        _
+    ).
+
+:- end_tests(predicates).
